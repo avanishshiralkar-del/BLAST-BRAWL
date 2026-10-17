@@ -578,7 +578,10 @@ function beginNetworkMatch(match) {
 }
 
 function applyNetworkState(state) {
-  world.networkStateAge = 0;
+  const snapshotAge = Number.isFinite(state.sentAt)
+    ? clamp((Date.now() - state.sentAt) / 1000, 0, 0.5)
+    : 0;
+  world.networkStateAge = snapshotAge;
   world.phase = state.phase;
   world.timer = Number(state.timer) || 0;
   world.mapId = state.mapId || world.mapId;
@@ -595,12 +598,19 @@ function applyNetworkState(state) {
         : snapshot.id;
       const previous = existing.get(playerId) || {};
       const player = { ...previous, ...snapshot, id: playerId };
-      if (!world.isHost && previous.alive && player.alive &&
-          Number.isFinite(previous.x) && Number.isFinite(previous.y)) {
-        player.x = previous.x + (player.x - previous.x) * 0.35;
-        player.y = previous.y + (player.y - previous.y) * 0.35;
-        player.vx = previous.vx + (player.vx - previous.vx) * 0.5;
-        player.vy = previous.vy + (player.vy - previous.vy) * 0.5;
+      if (!world.isHost && player.alive && Number.isFinite(player.x) && Number.isFinite(player.y)) {
+        const predicted = collideWithWalls(
+          player,
+          player.x + (player.vx || 0) * snapshotAge,
+          player.y + (player.vy || 0) * snapshotAge
+        );
+        if (previous.alive && Number.isFinite(previous.x) && Number.isFinite(previous.y)) {
+          player.x = previous.x + (predicted.x - previous.x) * 0.65;
+          player.y = previous.y + (predicted.y - previous.y) * 0.65;
+        } else {
+          player.x = predicted.x;
+          player.y = predicted.y;
+        }
       }
       return player;
     });
@@ -612,7 +622,16 @@ function applyNetworkState(state) {
       awardLocalKillReward();
     }
   }
-  if (Array.isArray(state.projectiles)) world.projectiles = state.projectiles;
+  if (Array.isArray(state.projectiles)) {
+    world.projectiles = state.projectiles
+      .map((projectile) => ({
+        ...projectile,
+        x: projectile.x + projectile.vx * snapshotAge,
+        y: projectile.y + projectile.vy * snapshotAge,
+        ttl: projectile.ttl - snapshotAge,
+      }))
+      .filter((projectile) => projectile.ttl > 0);
+  }
   if (Array.isArray(state.pickups)) world.pickups = state.pickups;
   if (Array.isArray(state.hazards)) world.hazards = state.hazards;
   if (state.grandToken) world.grandToken = state.grandToken;
@@ -2189,6 +2208,7 @@ function publishNetworkState(timestamp) {
       .catch((error) => showNetworkError(`Room status could not sync: ${describeFirebaseError(error)}`));
   }
   const state = {
+    sentAt: Date.now(),
     phase: world.phase,
     timer: world.timer,
     mapId: world.mapId,
@@ -2293,6 +2313,57 @@ function updateMatch(dt) {
   checkForEliminatedTeams();
 }
 
+function advanceGuestVisuals(dt) {
+  updateParticles(dt);
+  for (const [index, hazard] of world.hazards.entries()) {
+    if (hazard.kind === 'saw') {
+      hazard.angle += (hazard.speed || 0) * dt;
+      hazard.x = world.width / 2 + Math.sin(world.timer * 0.8 + hazard.angle + index) * 240;
+      hazard.y = 380 + Math.cos(world.timer * 1.2 + index) * 110;
+    } else if (hazard.kind === 'storm') {
+      hazard.tick += dt;
+      hazard.active = Math.sin(hazard.tick * 1.4) > 0.35;
+    }
+  }
+  for (const pickup of world.pickups) pickup.pulse += dt * 3;
+  if (world.grandToken) {
+    world.grandToken.pulse += dt * 2.7;
+    const holder = world.players.find((player) =>
+      player.id === world.grandToken.holderId && player.alive
+    );
+    if (holder) {
+      world.grandToken.x = holder.x;
+      world.grandToken.y = holder.y - 42;
+    }
+  }
+  if (world.networkStateAge >= 0.5) return;
+  const visualDt = Math.min(dt, 0.5 - world.networkStateAge);
+  for (const player of world.players) {
+    if (!player.alive || player.id === world.localId) continue;
+    const position = collideWithWalls(
+      player,
+      player.x + (player.vx || 0) * visualDt,
+      player.y + (player.vy || 0) * visualDt
+    );
+    player.x = position.x;
+    player.y = position.y;
+  }
+  for (let index = world.projectiles.length - 1; index >= 0; index -= 1) {
+    const projectile = world.projectiles[index];
+    const previousX = projectile.x;
+    const previousY = projectile.y;
+    projectile.x += projectile.vx * visualDt;
+    projectile.y += projectile.vy * visualDt;
+    projectile.ttl -= visualDt;
+    if (projectile.ttl <= 0 || projectile.x < 0 || projectile.x > world.width ||
+        projectile.y < 0 || projectile.y > world.height ||
+        projectileHitsWall(previousX, previousY, projectile.x, projectile.y, projectile.radius)) {
+      world.projectiles.splice(index, 1);
+    }
+  }
+  world.networkStateAge += visualDt;
+}
+
 function updateFrame(timestamp) {
   const dt = Math.min((timestamp - (world.lastTime || timestamp)) / 1000, 0.033);
   world.lastTime = timestamp;
@@ -2302,17 +2373,14 @@ function updateFrame(timestamp) {
     else {
       publishNetworkInput(timestamp);
       if (world.phase === 'match') {
+        world.timer = Math.max(0, world.timer - dt);
+        const mins = Math.floor(world.timer / 60).toString().padStart(2, '0');
+        const secs = Math.floor(world.timer % 60).toString().padStart(2, '0');
+        timerEl.textContent = `${mins}:${secs}`;
+        timerEl.classList.toggle('warning', world.timer < 30);
         const local = getLocalPlayer();
         if (local?.alive) movePlayer(local, dt);
-        world.networkStateAge = Math.min(0.3, world.networkStateAge + dt);
-        if (world.networkStateAge < 0.25) {
-          for (const player of world.players) {
-            if (player.alive && player.id !== world.localId) {
-              player.x += player.vx * dt;
-              player.y += player.vy * dt;
-            }
-          }
-        }
+        advanceGuestVisuals(dt);
       }
     }
   }
