@@ -83,6 +83,7 @@ const world = {
   mapRevealRemaining: 0,
   cameraZoom: 1,
   countdownRemaining: 0,
+  networkStateAge: 0,
   deathPopupUntil: 0,
   deathMessage: 'Respawning soon...',
   players: [],
@@ -245,7 +246,7 @@ let networkStops = [];
 let remoteInputs = {};
 let lastNetworkInputAt = 0;
 let lastNetworkStateAt = 0;
-const NETWORK_INPUT_INTERVAL_MS = 120;
+const NETWORK_INPUT_INTERVAL_MS = 80;
 const NETWORK_STATE_INTERVAL_MS = 200;
 let networkInputWritePending = false;
 let networkStateWritePending = false;
@@ -577,6 +578,7 @@ function beginNetworkMatch(match) {
 }
 
 function applyNetworkState(state) {
+  world.networkStateAge = 0;
   world.phase = state.phase;
   world.timer = Number(state.timer) || 0;
   world.mapId = state.mapId || world.mapId;
@@ -592,7 +594,15 @@ function applyNetworkState(state) {
         ? `player-${snapshot.networkUid}`
         : snapshot.id;
       const previous = existing.get(playerId) || {};
-      return { ...previous, ...snapshot, id: playerId };
+      const player = { ...previous, ...snapshot, id: playerId };
+      if (!world.isHost && previous.alive && player.alive &&
+          Number.isFinite(previous.x) && Number.isFinite(previous.y)) {
+        player.x = previous.x + (player.x - previous.x) * 0.35;
+        player.y = previous.y + (player.y - previous.y) * 0.35;
+        player.vx = previous.vx + (player.vx - previous.vx) * 0.5;
+        player.vy = previous.vy + (player.vy - previous.vy) * 0.5;
+      }
+      return player;
     });
     const updatedLocal = getLocalPlayer();
     const reportedKills = Math.max(0, Number(updatedLocal?.kills) || 0);
@@ -2289,7 +2299,22 @@ function updateFrame(timestamp) {
 
   if (world.phase === 'match' || world.phase === 'countdown') {
     if (!world.roomCode || world.isHost) updateMatch(dt);
-    else publishNetworkInput(timestamp);
+    else {
+      publishNetworkInput(timestamp);
+      if (world.phase === 'match') {
+        const local = getLocalPlayer();
+        if (local?.alive) movePlayer(local, dt);
+        world.networkStateAge = Math.min(0.3, world.networkStateAge + dt);
+        if (world.networkStateAge < 0.25) {
+          for (const player of world.players) {
+            if (player.alive && player.id !== world.localId) {
+              player.x += player.vx * dt;
+              player.y += player.vy * dt;
+            }
+          }
+        }
+      }
+    }
   }
   publishNetworkState(timestamp);
   render();
