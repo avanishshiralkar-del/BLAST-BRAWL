@@ -1,0 +1,81 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "profiles": {
+      ".read": "auth != null",
+      ".indexOn": ["xp"],
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['uid', 'displayName', 'xp', 'skins', 'guns', 'tokens', 'tokenDay', 'dailyTokensEarned', 'equippedSkin', 'equippedGun', 'updatedAt']) && newData.child('uid').val() == $uid && newData.child('displayName').isString() && newData.child('displayName').val().length <= 18 && newData.child('xp').isNumber() && newData.child('xp').val() >= 0 && newData.child('skins').hasChildren() && newData.child('guns').hasChildren() && newData.child('tokens').isNumber() && newData.child('tokens').val() >= 0 && newData.child('tokenDay').isString() && newData.child('dailyTokensEarned').isNumber() && newData.child('dailyTokensEarned').val() >= 0 && newData.child('dailyTokensEarned').val() <= 100 && newData.child('equippedSkin').isString() && newData.child('equippedGun').isString() && newData.child('updatedAt').isNumber()",
+        "skins": {
+          "$skinId": {
+            ".validate": "newData.val() == true && ($skinId == 'rookie' || $skinId == 'neon' || $skinId == 'ember' || $skinId == 'frost')"
+          }
+        },
+        "guns": {
+          "$gunId": {
+            ".validate": "newData.val() == true && ($gunId == 'pulse' || $gunId == 'burst' || $gunId == 'scatter' || $gunId == 'rail')"
+          }
+        }
+      }
+    },
+    "friendRequests": {
+      "$recipientUid": {
+        ".read": "auth != null && auth.uid == $recipientUid",
+        "$senderUid": {
+          ".write": "auth != null && ((auth.uid == $senderUid && !data.exists() && newData.child('status').val() == 'pending') || (auth.uid == $recipientUid && data.exists() && data.child('status').val() == 'pending' && (newData.child('status').val() == 'accepted' || newData.child('status').val() == 'declined')))",
+          ".validate": "newData.hasChildren(['fromUid', 'fromName', 'status', 'createdAt']) && newData.child('fromUid').val() == $senderUid && newData.child('fromName').isString() && newData.child('fromName').val().length <= 40 && (newData.child('status').val() == 'pending' || newData.child('status').val() == 'accepted' || newData.child('status').val() == 'declined') && newData.child('createdAt').isNumber()"
+        }
+      }
+    },
+    "friends": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        "$friendUid": {
+          ".write": "auth != null && (auth.uid == $uid || auth.uid == $friendUid) && ((root.child('friendRequests').child($uid).child($friendUid).child('status').val() == 'accepted') || (root.child('friendRequests').child($friendUid).child($uid).child('status').val() == 'accepted'))",
+          ".validate": "newData.hasChildren(['uid', 'displayName', 'createdAt']) && newData.child('uid').val() == $friendUid && newData.child('displayName').isString() && newData.child('displayName').val().length <= 40 && newData.child('createdAt').isNumber()"
+        }
+      }
+    },
+    "rooms": {
+      "$roomCode": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.child('hostUid').val() == auth.uid) || data.child('hostUid').val() == auth.uid)",
+        "hostUid": {
+          ".validate": "newData.isString()"
+        },
+        "phase": {
+          ".write": "auth != null && root.child('rooms').child($roomCode).child('hostUid').val() == auth.uid",
+          ".validate": "newData.val() == 'lobby' || newData.val() == 'countdown' || newData.val() == 'match' || newData.val() == 'pause' || newData.val() == 'result'"
+        },
+        "settings": {
+          ".write": "auth != null && root.child('rooms').child($roomCode).child('hostUid').val() == auth.uid"
+        },
+        "match": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('rooms').child($roomCode).child('hostUid').val() == auth.uid"
+        },
+        "state": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('rooms').child($roomCode).child('hostUid').val() == auth.uid"
+        },
+        "players": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && ((auth.uid == $uid && (!newData.exists() || root.child('rooms').child($roomCode).child('phase').val() == 'lobby')) || root.child('rooms').child($roomCode).child('hostUid').val() == auth.uid)",
+            ".validate": "!newData.exists() || (newData.hasChildren(['uid', 'name', 'team']) && newData.child('uid').val() == $uid && newData.child('name').isString() && newData.child('name').val().length <= 18 && newData.child('team').isString())"
+          }
+        },
+        "inputs": {
+          ".read": "auth != null && root.child('rooms').child($roomCode).child('hostUid').val() == auth.uid",
+          "$uid": {
+            ".read": "auth != null && (auth.uid == $uid || root.child('rooms').child($roomCode).child('hostUid').val() == auth.uid)",
+            ".write": "auth != null && auth.uid == $uid && root.child('rooms').child($roomCode).child('players').child($uid).exists() && (!newData.exists() || root.child('rooms').child($roomCode).child('phase').val() == 'countdown' || root.child('rooms').child($roomCode).child('phase').val() == 'match')",
+            ".validate": "newData.hasChildren(['left', 'right', 'up', 'down', 'shoot', 'dash', 'use', 'aim', 'weaponLevel']) && newData.child('left').isBoolean() && newData.child('right').isBoolean() && newData.child('up').isBoolean() && newData.child('down').isBoolean() && newData.child('shoot').isBoolean() && newData.child('dash').isBoolean() && newData.child('use').isBoolean() && newData.child('aim').isNumber() && newData.child('weaponLevel').isNumber()"
+          }
+        }
+      }
+    }
+  }
+}

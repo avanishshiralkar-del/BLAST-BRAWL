@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Chaos Arena</title>
+  <link rel="stylesheet" href="chaos.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="hud">
+      <div class="topbar">
+        <button id="gameMenuButton" class="hamburger" type="button" aria-label="Open game menu">☰</button>
+        <div class="brand">
+          <span class="brand-badge">C</span>
+          <span>Chaos Arena</span>
+        </div>
+        <div class="room-chip">Room <strong id="roomCode">--</strong></div>
+      </div>
+
+      <div class="scoreboard">
+        <div class="team-group" id="teamGroupLeft"></div>
+        <div class="mid-panel">
+          <span class="mid-label">Chaos Points</span>
+          <span class="timer" id="timer">03:00</span>
+        </div>
+        <div class="team-group" id="teamGroupRight"></div>
+      </div>
+
+      <div class="phase-banner" id="phaseBanner">Battle lobby</div>
+      <div class="enemy-direction" id="enemyDirection" aria-live="polite">NO ENEMIES</div>
+      <div class="match-countdown" id="matchCountdown" aria-live="assertive" hidden>
+        <span class="countdown-caption">GET READY</span>
+        <div class="map-spinner" aria-hidden="true"><span>✦</span></div>
+        <div id="mapSnapshot" class="map-snapshot" aria-hidden="true"></div>
+        <div id="mapCarousel" class="map-carousel" aria-hidden="true"></div>
+        <small class="countdown-map" id="countdownMap">Bouncy Reef</small>
+        <strong id="countdownNumber">3</strong>
+      </div>
+      <div class="death-overlay" id="deathOverlay" aria-live="assertive" hidden>
+        <span>YOU DIED</span>
+        <small id="deathMessage">Respawning soon...</small>
+      </div>
+
+      <div class="bottom-hud">
+        <div class="action-box player-status" aria-live="polite">
+          <span>HP <strong id="healthValue">100</strong></span>
+          <span>KOs <strong id="koValue">0</strong></span>
+          <span class="health-track"><span id="healthBar"></span></span>
+          <span>Lives <strong id="livesValue">3</strong></span>
+          <span>Gun <strong id="weaponValue">MK I</strong></span>
+          <span>Shop +<strong id="matchTokenValue">0</strong></span>
+          <span id="spawnShieldStatus" class="spawn-shield-status" hidden></span>
+        </div>
+      </div>
+      <div id="mobileControls" class="mobile-controls" aria-label="Touch game controls">
+        <div id="moveJoystick" class="move-joystick" role="application" aria-label="Movement joystick">
+          <span class="joystick-directions" aria-hidden="true">▲</span>
+          <span id="joystickKnob" class="joystick-knob" aria-hidden="true"></span>
+        </div>
+        <div class="touch-actions"><button type="button" data-touch="shoot">Fire</button><button type="button" data-touch="dash">Dash</button><button type="button" data-touch="use">Shield</button></div>
+      </div>
+    </div>
+
+    <section id="menuScreen">
+      <div class="card">
+        <div class="hero">
+          <div class="kicker">Chaos is live</div>
+          <h1>Chaos <span class="accent">Arena</span></h1>
+          <p class="lead">Build a squad, survive chaotic themed arenas, and chase the top score.</p>
+          <div class="feature-row">
+            <span class="feature-pill">Play with friends</span>
+            <span class="feature-pill">Map roulette</span>
+            <span class="feature-pill" id="selectedMapFeature">Five themed arenas</span>
+          </div>
+        </div>
+
+        <div class="side-panel home-actions">
+          <button id="openJoin" class="primary" type="button">Join a game</button>
+          <button id="openHost" class="secondary" type="button">Host a game</button>
+          <button id="accountButton" class="secondary" type="button">Sign up / Log in</button>
+          <button id="homeHelp" class="ghost" type="button">Help</button>
+          <button id="homeAbout" class="ghost" type="button">About</button>
+          <div id="menuHints" class="kicker">Host a Firebase room and share its code to play with friends.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="hostScreen" class="hidden page-screen">
+      <div class="page-panel">
+        <header class="result-header"><div><div class="kicker">Host a match</div><h2>Set the chaos</h2></div><button class="ghost backHome" type="button">Back</button></header>
+        <div class="host-grid">
+          <label>Player name<input id="playerName" type="text" maxlength="18" value="Rookie" autocomplete="nickname" /></label>
+          <label>Bots in match<select id="botCount" aria-label="Number of bots in the match"></select></label>
+          <label>Teams<select id="teamCount" aria-label="Number of teams"></select></label>
+          <label>Bot difficulty<select id="botDifficulty" aria-label="Bot difficulty"></select></label>
+          <label>Match length<select id="matchDuration"><option value="180">3 minutes (recommended)</option><option value="300">5 minutes</option><option value="600">10 minutes</option><option value="900">15 minutes</option></select></label>
+          <label>Lives per player<select id="matchLives"><option value="1">1 life</option><option value="3" selected>3 lives</option><option value="5">5 lives</option><option value="-1">Infinite lives</option></select></label>
+        </div>
+        <p id="botDifficultyDescription" class="map-description"></p>
+        <div class="host-actions"><button id="customizeMapButton" class="ghost" type="button">Build a map</button><button id="createRoom" class="primary" type="button">Create room</button></div>
+        <select id="mapSelect" aria-label="Map selection" hidden></select><span id="mapDescription" hidden></span>
+      </div>
+    </section>
+
+    <section id="joinScreen" class="hidden page-screen">
+      <div class="page-panel narrow-panel">
+        <header class="result-header"><div><div class="kicker">Join your friends</div><h2>Enter room code</h2></div><button class="ghost backHome" type="button">Back</button></header>
+        <label>Player name<input id="joinPlayerName" type="text" maxlength="18" value="Rookie" autocomplete="nickname" /></label>
+        <label for="joinRoomCode">5-character game code</label>
+        <div class="input-row"><input id="joinRoomCode" type="text" maxlength="5" placeholder="ROOM CODE" aria-label="Room code" /><button id="joinButton" class="primary" type="button">Join lobby</button></div>
+        <p class="map-description">Enter the host's five-character Firebase room code. Multiplayer requires Anonymous sign-in and the published Realtime Database rules.</p>
+      </div>
+    </section>
+
+    <section id="helpScreen" class="hidden page-screen">
+      <div class="page-panel help-panel">
+        <header class="result-header"><div><div class="kicker">Field guide</div><h2>Help & controls</h2></div><button class="ghost backHome" type="button">Back</button></header>
+        <div class="help-grid">
+          <article><h3>Movement & combat</h3><p><b>WASD / Arrow keys</b> move · <b>Mouse</b> aim · <b>Click / Space</b> shoot · <b>Shift</b> dash · <b>E</b> shield · <b>1–4</b> switch unlocked guns.</p></article>
+          <article><h3>Survive</h3><p>Watch your health and lives. A shield protects you briefly after respawning. If eliminated, spectate living players; use <b>+</b>/<b>-</b> to zoom.</p></article>
+          <article><h3>Pickups & scoring</h3><p>Collect tokens for points, a heart for healing, a pink heart for an extra life, a cartoon gun to upgrade, or a blue invincibility star for brief protection. The giant golden star is worth 50 points and drops when its carrier is eliminated.</p></article>
+          <article><h3>Arenas & teams</h3><p>The host chooses team count, bot skill, match length and lives. The arena is randomly selected from the map carousel when the match starts.</p></article>
+          <article><h3>Lobby & rooms</h3><p>Create a Firebase room, share its five-character code, and wait for friends to join. Only the host can start or pause the match; the host's game state is synced to every player.</p></article>
+          <article><h3>Account & progress</h3><p>Sign in with Google to save your profile and view the shared XP leaderboard. Cloud accounts require Firebase Authentication and a configured Realtime Database.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="aboutScreen" class="hidden page-screen">
+      <div class="page-panel narrow-panel">
+        <header class="result-header"><div><div class="kicker">About Chaos Arena</div><h2>Made for mayhem</h2></div><button class="ghost backHome" type="button">Back</button></header>
+        <p class="lead">Chaos Arena is a browser-based top-down arena shooter built with HTML, CSS, JavaScript, and the Canvas API. Its themed maps, bots, pickups, and local map workshop are designed for quick, chaotic matches.</p>
+        <p class="map-description">Google sign-in, cloud XP, and friend lobbies use Firebase. The room host runs the match simulation and shares its state through Realtime Database.</p>
+      </div>
+    </section>
+
+    <section id="mapEditorScreen" class="hidden">
+      <div class="editor-panel">
+        <div class="result-header">
+          <div>
+            <div class="kicker">Arena workshop</div>
+            <h2>Build your map</h2>
+          </div>
+        </div>
+        <div class="editor-settings">
+          <label>Map name<input id="customMapName" maxlength="24" value="My wild map" /></label>
+          <label>Theme<select id="customMapTheme"></select></label>
+          <label>Brush<select id="mapBrush">
+            <option value="wall">Crystal wall</option>
+            <option value="hazard">Theme hazard</option>
+            <option value="boost">Speed pad</option>
+            <option value="clear">Erase</option>
+          </select></label>
+        </div>
+        <p class="editor-help">Click tiles to build. Keep the center and spawn lanes open. Your saved maps stay in this browser.</p>
+        <canvas id="mapEditorCanvas" width="720" height="440" aria-label="Clickable map editor grid"></canvas>
+        <div class="editor-actions">
+          <button id="saveCustomMap" class="primary" type="button">Save map</button>
+          <button id="clearCustomMap" class="secondary" type="button">Clear board</button>
+          <button id="cancelMapEditor" class="ghost" type="button">Back to menu</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="accountScreen" class="hidden">
+      <div class="account-panel">
+        <div class="result-header">
+          <div>
+            <div class="kicker">Player account</div>
+            <h2 id="accountTitle">Save your progress</h2>
+          </div>
+          <button id="closeAccount" class="ghost" type="button">Back</button>
+        </div>
+        <p id="accountStatus" class="account-status" role="status" aria-live="polite">Checking account setup…</p>
+        <button id="googleSignIn" class="primary" type="button">Continue with Google</button>
+        <div id="emailAuthForm" class="email-auth-form">
+          <p class="auth-divider">Or continue with email</p>
+          <label for="emailAddress">Email address</label>
+          <input id="emailAddress" type="email" autocomplete="email" required maxlength="254" />
+          <label for="emailPassword">Password</label>
+          <input id="emailPassword" type="password" autocomplete="current-password" required minlength="6" />
+          <div class="input-row">
+            <button id="emailSignIn" class="secondary" type="button">Sign in with email</button>
+            <button id="emailSignUp" class="ghost" type="button">Create account</button>
+          </div>
+        </div>
+        <div id="accountDetails" class="hidden">
+          <div class="account-stats">
+            <span>PLAYER ID<strong id="accountUid"></strong></span>
+            <span>CAREER XP<strong id="accountXp">0</strong></span>
+            <span>SKINS<strong id="accountSkins">Rookie</strong></span>
+            <span>SHOP TOKENS<strong id="accountTokens">0</strong></span>
+          </div>
+          <section class="shop-section">
+            <div class="shop-heading"><div><h3>Player shop</h3><p id="tokenAllowance">Earn 10 tokens per kill · 100 tokens max per day.</p><p class="shop-note">Pulse is the free default gun. Sign in to save tokens and buy stronger guns here.</p></div><span class="shop-wallet">✦ <strong id="shopTokenBalance">0</strong></span></div>
+            <div class="shop-category"><h4>Skins</h4><div id="skinShop" class="shop-grid"></div></div>
+            <div class="shop-category"><h4>Guns</h4><div id="gunShop" class="shop-grid"></div></div>
+          </section>
+          <label for="equippedGun">Equipped gun</label>
+          <select id="equippedGun"></select>
+          <label for="equippedSkin">Equipped skin</label>
+          <select id="equippedSkin"></select>
+          <label for="friendUid">Add a friend by player ID</label>
+          <div class="input-row">
+            <input id="friendUid" type="text" maxlength="128" placeholder="Paste their player ID" />
+            <button id="sendFriendRequest" class="secondary" type="button">Send request</button>
+          </div>
+          <h3>Friend requests</h3>
+          <div class="friend-list" id="friendRequests"></div>
+          <button id="googleSignOut" class="ghost" type="button">Sign out</button>
+        </div>
+        <h3>Global XP leaderboard</h3>
+        <ol id="globalLeaderboard" class="global-leaderboard"><li>Sign in to load the leaderboard.</li></ol>
+      </div>
+    </section>
+
+    <section id="lobbyScreen" class="hidden">
+      <div class="lobby-panel">
+        <div class="lobby-header">
+          <div>
+            <div class="kicker">Squad lobby</div>
+            <div class="lobby-code" id="lobbyCodeText">ABCD1</div>
+          </div>
+          <div class="lobby-header-actions"><button id="lobbyHamburger" class="hamburger" type="button" aria-label="Open lobby menu">☰</button><button id="copyRoom" class="ghost" type="button">Copy code</button></div>
+        </div>
+
+        <div class="player-list" id="playerList"></div>
+
+        <div class="lobby-minigame">
+          <div><strong>While you wait: Star Catch</strong><span>Tap the star before it moves.</span></div>
+          <button id="minigameTarget" type="button" aria-label="Catch the moving star">✦</button>
+          <span>Score <strong id="minigameScore">0</strong></span>
+        </div>
+        <div class="lobby-actions">
+          <button id="startMatch" class="primary" type="button">Start match</button>
+          <button id="leaveLobby" class="ghost" type="button">Leave lobby</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="resultScreen" class="hidden">
+      <div class="end-panel">
+        <div class="result-header">
+          <div>
+            <div class="kicker">Match results</div>
+            <h2 id="scoreMessage">Chaos champion</h2>
+            <p id="mvpMessage" class="map-description"></p>
+          </div>
+        </div>
+
+        <div id="resultList" class="result-board"></div>
+        <h3>Full match leaderboard</h3>
+        <div class="match-leaderboard-wrap">
+          <table class="match-leaderboard">
+            <thead><tr><th>Place</th><th>Player</th><th>Team</th><th>KOs</th><th>Score</th></tr></thead>
+            <tbody id="matchLeaderboard"></tbody>
+          </table>
+        </div>
+        <p id="xpRewardMessage" class="xp-reward-message"></p>
+        <button id="postMatchAccount" class="secondary hidden" type="button">Sign up / Log in to save progress</button>
+
+        <div class="result-actions">
+          <button id="playAgain" class="primary" type="button">Play again</button>
+          <button id="backToMenu" class="ghost" type="button">Menu</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="winnerIntro" class="winner-intro hidden" aria-live="assertive">
+      <div class="winner-intro-panel">
+        <div class="kicker" id="winnerIntroKicker">MATCH HIGHLIGHTS</div>
+        <h1 id="winnerIntroTitle">CORAL WINS!</h1>
+        <p id="winnerIntroCaption">Reliving the biggest moments...</p>
+        <canvas id="winnerReplayCanvas" width="900" height="520" aria-label="Animated match highlights"></canvas>
+        <div class="winner-intro-footer">
+          <span id="winnerIntroProgress">Highlight 1</span>
+          <button id="skipWinnerIntro" class="secondary" type="button">Skip highlights</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="pauseScreen" class="hidden">
+      <div class="settings-panel" id="settingsPanel">
+        <div class="result-header">
+          <div>
+            <div class="kicker">Settings</div>
+            <h2>Match options</h2>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <label for="volume">Volume</label>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="0.8" />
+        </div>
+
+        <div class="setting-row">
+          <label for="sensitivity">Mouse sens.</label>
+          <input id="sensitivity" type="range" min="0.5" max="2" step="0.1" value="1" />
+        </div>
+
+        <div class="settings-actions">
+          <button id="resumeMatch" class="primary" type="button">Resume</button>
+          <button id="leaveGame" class="ghost" type="button">Leave game</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="gameMenu" class="game-menu hidden">
+      <button id="matchHelp" class="secondary" type="button">Help & controls</button>
+      <button id="hostPause" class="secondary hidden" type="button">Pause match</button>
+      <button id="menuLeave" class="secondary" type="button">Leave lobby</button>
+      <button id="menuClose" class="ghost" type="button">Close</button>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <script type="module" src="chaos.js"></script>
+</body>
+</html>
