@@ -1,7 +1,7 @@
 :root {
   --bg-1: #0e1930;
   --bg-2: #172d46;
-  --panel: rgba(18, 28, 45, 0.92);
+  --panel: rgba(18, 28, 45, 0.94);
   --panel-border: rgba(255, 255, 255, 0.15);
   --text: #edf7ff;
   --muted: #9fb8cc;
@@ -28,10 +28,33 @@ button, input, select { font: inherit; cursor: pointer; }
 #app { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
 #gameCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
+/* FIX DROPDOWNS TEXT VISIBILITY */
+select {
+  width: 100%;
+  border: 1px solid var(--panel-border);
+  background: #111d33 !important;
+  color: #edf7ff !important;
+  border-radius: 14px;
+  padding: 14px 18px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: 0.2s;
+  pointer-events: auto;
+  z-index: 20;
+  position: relative;
+  appearance: auto;
+}
+
+select option {
+  background-color: #0e1930 !important;
+  color: #edf7ff !important;
+  padding: 10px;
+}
+
 /* HUD Topbar */
 #hud { position: absolute; inset: 0; pointer-events: none; }
 .topbar { position: absolute; top: 22px; left: 24px; right: 24px; display: flex; align-items: center; justify-content: space-between; z-index: 5; pointer-events: auto; }
-.hamburger { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid var(--panel-border); border-radius: 14px; color: var(--text); background: rgba(11, 18, 30, 0.75); }
+.hamburger { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid var(--panel-border); border-radius: 14px; color: var(--text); background: rgba(11, 18, 30, 0.85); }
 .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.9rem; background: rgba(11, 18, 30, 0.85); padding: 8px 18px; border-radius: 999px; border: 1px solid var(--panel-border); }
 .brand-badge { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: linear-gradient(135deg, var(--orange), var(--pink)); color: #000; font-size: 0.8rem; }
 .room-chip { background: rgba(11, 18, 30, 0.85); border: 1px solid var(--panel-border); color: var(--muted); padding: 12px 20px; border-radius: 999px; font-size: 0.75rem; letter-spacing: 0.08em; }
@@ -41,7 +64,7 @@ button, input, select { font: inherit; cursor: pointer; }
 .team-panel { display: flex; align-items: center; gap: 12px; padding: 10px 20px; background: rgba(11, 18, 30, 0.9); border-radius: 14px; }
 .team-name { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--muted); }
 .team-score { font-size: 1.6rem; font-weight: 900; }
-.mid-panel { background: rgba(11, 18, 30, 0.95); border: 1px solid var(--panel-border); padding: 8px 24px; border-radius: 16px; text-align: center; }
+.mid-panel { background: rgba(11, 18, 30, 0.95); border: 1px solid var(--panel-border); padding: 8px 24px; border-radius: 16px; text-align: center; min-width: 130px; }
 .mid-label { display: block; font-size: 0.55rem; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }
 .timer { font-size: 1.6rem; font-weight: 900; letter-spacing: 0.05em; }
 
@@ -54,11 +77,11 @@ button, input, select { font: inherit; cursor: pointer; }
 .health-track { width: 120px; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; display: inline-block; vertical-align: middle; }
 .health-track span { display: block; width: 100%; height: 100%; background: linear-gradient(90deg, var(--danger), var(--lime)); border-radius: inherit; transition: width 0.2s ease; }
 
-/* Screens & Modals */
-#menuScreen, #hostScreen, #joinScreen, #helpScreen, #aboutScreen, #accountScreen {
+/* Modal Screens & Overlay Management */
+.screen {
   position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 32px; background: rgba(8, 13, 22, 0.65); backdrop-filter: blur(10px); overflow-y: auto; pointer-events: auto;
 }
-.hidden { display: none !important; }
+.hidden { display: none !important; pointer-events: none !important; }
 
 /* Main Menu Card Layout */
 .card {
@@ -73,6 +96,8 @@ button, input, select { font: inherit; cursor: pointer; }
   gap: 40px;
   box-shadow: 0 30px 80px rgba(0,0,0,0.6);
   align-items: center;
+  position: relative;
+  z-index: 20;
 }
 
 .hero { display: flex; flex-direction: column; }
@@ -87,30 +112,56 @@ button, input, select { font: inherit; cursor: pointer; }
 .side-panel.home-actions { display: flex; flex-direction: column; gap: 12px; width: 100%; }
 .side-panel button { width: 100%; text-align: center; justify-content: center; }
 
-button.primary { background: var(--lime); color: #0a131f; font-weight: 800; border-radius: 16px; padding: 18px 24px; border: none; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; box-shadow: 0 8px 25px rgba(187,255,125,0.25); }
+button.primary { background: var(--lime); color: #0a131f; font-weight: 800; border-radius: 16px; padding: 18px 24px; border: none; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; box-shadow: 0 8px 25px rgba(187,255,125,0.25); pointer-events: auto; }
 button.primary:hover { transform: translateY(-2px); filter: brightness(1.05); }
 
-button.secondary { background: var(--teal); color: #0a131f; font-weight: 800; border-radius: 16px; padding: 18px 24px; border: none; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; box-shadow: 0 8px 25px rgba(95,231,207,0.2); }
+button.secondary { background: var(--teal); color: #0a131f; font-weight: 800; border-radius: 16px; padding: 18px 24px; border: none; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; box-shadow: 0 8px 25px rgba(95,231,207,0.2); pointer-events: auto; }
 button.secondary:hover { transform: translateY(-2px); filter: brightness(1.05); }
 
-button.ghost { background: rgba(255,255,255,0.05); color: var(--text); font-weight: 700; border-radius: 16px; padding: 16px 24px; border: 1px solid var(--panel-border); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; }
+button.ghost { background: rgba(255,255,255,0.05); color: var(--text); font-weight: 700; border-radius: 16px; padding: 16px 24px; border: 1px solid var(--panel-border); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; pointer-events: auto; }
 button.ghost:hover { background: rgba(255,255,255,0.1); }
 
-.menu-footer-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-#menuHints { font-size: 0.68rem; color: var(--muted); text-align: center; margin-top: 8px; line-height: 1.4; }
+/* Brawler Cards Grid */
+.brawler-select-section { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+.brawler-cards-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.brawler-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.2s;
+  pointer-events: auto;
+}
+.brawler-card:hover { background: rgba(255, 255, 255, 0.08); transform: translateY(-2px); }
+.brawler-card.active { border-color: var(--lime); background: rgba(187, 255, 125, 0.08); box-shadow: 0 0 20px rgba(187, 255, 125, 0.2); }
+.brawler-preview-canvas { width: 80px; height: 80px; margin-bottom: 8px; }
+.brawler-card-title { font-size: 0.9rem; font-weight: 800; text-transform: uppercase; }
+.brawler-card-tag { font-size: 0.65rem; color: var(--muted); margin-top: 4px; }
+
+/* Live Stat Box */
+.brawler-stats-box { background: rgba(11, 18, 30, 0.8); border: 1px solid var(--panel-border); border-radius: 16px; padding: 16px; margin-top: 8px; }
+.stats-header { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+.stats-header span { font-size: 1rem; font-weight: 800; text-transform: uppercase; color: var(--lime); }
+.stats-header small { font-size: 0.75rem; color: var(--muted); }
+.stat-bars-grid { display: flex; flex-direction: column; gap: 8px; }
+.stat-bar-row { display: grid; grid-template-columns: 80px 1fr; align-items: center; font-size: 0.7rem; font-weight: 800; color: var(--muted); }
+.bar-track { height: 8px; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 100%; background: linear-gradient(90deg, var(--teal), var(--lime)); border-radius: inherit; transition: width 0.3s ease; }
 
 .page-panel, .account-panel {
-  background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 40px; max-width: 820px; width: 100%; box-shadow: 0 30px 80px rgba(0,0,0,0.6); pointer-events: auto;
+  background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 40px; max-width: 820px; width: 100%; box-shadow: 0 30px 80px rgba(0,0,0,0.6); pointer-events: auto; position: relative; z-index: 20;
 }
 .narrow-panel { max-width: 540px; }
 
-input, select {
-  width: 100%; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.05); color: var(--text); border-radius: 14px; padding: 14px 18px; font-size: 0.95rem; outline: none; transition: 0.2s; pointer-events: auto; z-index: 20; position: relative;
-}
-input:focus, select:focus { border-color: var(--teal); background: rgba(255,255,255,0.08); }
 label { display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 18px; pointer-events: auto; }
+.host-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
-.result-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.result-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
 .result-header h2 { font-size: 2rem; font-weight: 900; margin: 4px 0 0 0; text-transform: uppercase; }
 .result-header .kicker { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; }
 
