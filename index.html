@@ -26,7 +26,7 @@
       </div>
 
       <div class="scoreboard">
-        <div class="team-panel" id="teamPanelLeft">
+        <div class="team-panel" id="teamPanelLeft" style="border: 2px solid #ff8a67;">
           <span class="team-name" id="teamNameLeft">Coral</span>
           <span class="team-score" id="teamScoreLeft">0</span>
         </div>
@@ -34,14 +34,14 @@
           <span class="mid-label">Chaos Points</span>
           <span class="timer" id="timer">03:00</span>
         </div>
-        <div class="team-panel" id="teamPanelRight">
+        <div class="team-panel" id="teamPanelRight" style="border: 2px solid #5fe7cf;">
           <span class="team-name" id="teamNameRight">Cyan</span>
           <span class="team-score" id="teamScoreRight">0</span>
         </div>
       </div>
 
       <div class="phase-banner" id="phaseBanner">Battle lobby</div>
-      <div class="enemy-direction" id="enemyDirection" aria-live="polite">NO ENEMIES</div>
+      <div class="enemy-direction" id="enemyDirection" aria-live="polite">NEAREST ENEMY · 424M</div>
 
       <div class="bottom-hud">
         <div class="action-box player-status" aria-live="polite">
@@ -49,8 +49,8 @@
           <span>KOs <strong id="koValue">0</strong></span>
           <span class="health-track"><span id="healthBar"></span></span>
           <span>Lives <strong id="livesValue">3</strong></span>
-          <span>Gun <strong id="weaponValue">Pulse</strong></span>
-          <span>Shop +<strong id="matchTokenValue">0</strong></span>
+          <span>Class <strong id="brawlerClassValue">Volt</strong></span>
+          <span>Tokens +<strong id="matchTokenValue">0</strong></span>
         </div>
       </div>
     </div>
@@ -61,34 +61,32 @@
         <div class="hero">
           <div class="kicker">Chaos is live</div>
           <h1>Blast <span class="accent">Brawl!</span></h1>
-          <p class="lead">Build a squad, survive chaotic themed arenas, unlock rare brawlers, and chase the top score.</p>
+          <p class="lead">Select unique brawler classes with specialized combat abilities, conquer dynamic arenas, and dominate the leaderboard.</p>
           <div class="feature-row">
-            <span class="feature-pill">🔥 Multiplayer Rooms</span>
-            <span class="feature-pill">🤖 Smart AI Bots</span>
-            <span class="feature-pill">🗺️ Strategic Maps</span>
+            <button class="feature-pill" type="button">Unique Brawler Classes</button>
+            <button class="feature-pill" type="button">Smart AI Bots</button>
+            <button class="feature-pill" type="button">Multiplayer Rooms</button>
           </div>
         </div>
 
         <div class="side-panel home-actions">
-          <button id="openJoin" class="primary" type="button">Join a game</button>
-          <button id="openHost" class="secondary" type="button">Host a game</button>
+          <button id="openJoin" class="primary" type="button">Join a Game</button>
+          <button id="openHost" class="secondary" type="button">Host a Game</button>
           <button id="accountButton" class="secondary" type="button">Sign up / Log in</button>
-          <div class="menu-footer-btns">
-            <button id="homeHelp" class="ghost" type="button">Help</button>
-            <button id="homeAbout" class="ghost" type="button">About</button>
-          </div>
-          <div id="menuHints">Host a Firebase room and share its code to play with friends.</div>
+          <button id="homeHelp" class="ghost" type="button">Help</button>
+          <button id="homeAbout" class="ghost" type="button">About</button>
+          <div id="menuHints">Host a room and pick your brawler class to battle!</div>
         </div>
       </div>
     </section>
 
-    <!-- Host Screen -->
+    <!-- Host Screen with Unique Brawler Class Selection -->
     <section id="hostScreen" class="hidden page-screen">
       <div class="page-panel">
         <header class="result-header">
           <div>
-            <div class="kicker">MULTIPARTY SETUP</div>
-            <h2>Host a Match</h2>
+            <div class="kicker">Match Setup</div>
+            <h2>Host a Game</h2>
           </div>
           <button class="ghost backHome" type="button">Back</button>
         </header>
@@ -98,12 +96,17 @@
           <label>Teams <select id="teamCount"><option value="2" selected>2 Teams</option><option value="3">3 Teams</option><option value="4">4 Teams</option></select></label>
           <label>Bot Difficulty <select id="botDifficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="nightmare">Nightmare</option></select></label>
           <label>Match Length <select id="matchDuration"><option value="180">3 Minutes</option><option value="300">5 Minutes</option></select></label>
-          <label>Lives <select id="matchLives"><option value="3" selected>3 Lives</option><option value="5">5 Lives</option></select></label>
+          
+          <!-- Unique Brawler Class Selection -->
+          <label>Brawler Class <select id="brawlerClassSelect">
+            <option value="volt">⚡ Volt (Speed & Electric Dashes)</option>
+            <option value="pyre">🔥 Pyre (Explosive Fire Bursts)</option>
+            <option value="bastion">🛡️ Bastion (Tanky Shield Wall)</option>
+          </select></label>
         </div>
         <div class="host-actions" style="margin-top: 24px; display: flex; gap: 12px;">
-          <button id="createRoom" class="primary" type="button" style="flex:1;">Create Lobby</button>
+          <button id="createRoom" class="primary" type="button" style="flex:1;">Create Lobby & Start</button>
         </div>
-        <select id="mapSelect" hidden></select>
       </div>
     </section>
 
@@ -111,17 +114,14 @@
     <section id="joinScreen" class="hidden page-screen">
       <div class="page-panel narrow-panel">
         <header class="result-header">
-          <div>
-            <div class="kicker">SQUAD UP</div>
-            <h2>Join Room</h2>
-          </div>
+          <div><div class="kicker">Squad Up</div><h2>Enter Room Code</h2></div>
           <button class="ghost backHome" type="button">Back</button>
         </header>
         <label>Player Name <input id="joinPlayerName" type="text" maxlength="18" value="Rookie" /></label>
-        <label for="joinRoomCode">5-Character Room Code</label>
+        <label for="joinRoomCode">5-Character Game Code</label>
         <div class="input-row" style="display: flex; gap: 12px;">
-          <input id="joinRoomCode" type="text" maxlength="5" placeholder="CODE" style="flex:1;" />
-          <button id="joinButton" class="primary" type="button">Join</button>
+          <input id="joinRoomCode" type="text" maxlength="5" placeholder="ROOM CODE" style="flex:1;" />
+          <button id="joinButton" class="primary" type="button">Join Lobby</button>
         </div>
       </div>
     </section>
@@ -130,13 +130,10 @@
     <section id="accountScreen" class="hidden page-screen">
       <div class="account-panel">
         <div class="result-header">
-          <div>
-            <div class="kicker">PILOT PROFILE & ARMORY</div>
-            <h2 id="accountTitle">Account & Gear Shop</h2>
-          </div>
+          <div><div class="kicker">Player Profile</div><h2 id="accountTitle">Progression & Armory</h2></div>
           <button id="closeAccount" class="ghost" type="button">Back</button>
         </div>
-        <p id="accountStatus" class="account-status">Sign in with Google or email to save your brawler progression and unlock rare packs.</p>
+        <p id="accountStatus" class="account-status">Sign in to save your brawler rank, unlocked skins, and match tokens.</p>
         <button id="googleSignIn" class="primary" type="button" style="width:100%; margin-bottom:16px;">Continue with Google</button>
         <div id="accountDetails" class="hidden">
           <div class="account-stats">
@@ -152,10 +149,10 @@
     <section id="helpScreen" class="hidden page-screen">
       <div class="page-panel narrow-panel">
         <header class="result-header">
-          <div><div class="kicker">GUIDE</div><h2>Help & Controls</h2></div>
+          <div><div class="kicker">Guide</div><h2>Help & Classes</h2></div>
           <button class="ghost backHome" type="button">Back</button>
         </header>
-        <p class="lead"><b>WASD</b> to move · <b>Mouse</b> to aim · <b>Click / Space</b> to shoot · Eliminate bots and rivals to earn tokens and rank up on the leaderboard!</p>
+        <p class="lead"><b>WASD</b> to move · <b>Mouse</b> to aim · <b>Click / Space</b> to shoot. Choose between Volt, Pyre, and Bastion to match your playstyle!</p>
       </div>
     </section>
 
@@ -163,10 +160,10 @@
     <section id="aboutScreen" class="hidden page-screen">
       <div class="page-panel narrow-panel">
         <header class="result-header">
-          <div><div class="kicker">ABOUT</div><h2>Blast Brawl!</h2></div>
+          <div><div class="kicker">About</div><h2>Blast Brawl!</h2></div>
           <button class="ghost backHome" type="button">Back</button>
         </header>
-        <p class="lead">Blast Brawl! is an action-packed arcade brawler featuring multi-team combat, tactical arenas, and smooth netcode.</p>
+        <p class="lead">Blast Brawl! features unique brawler abilities, dynamic hazards, and tactical grid arenas.</p>
       </div>
     </section>
 
