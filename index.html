@@ -5,10 +5,132 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0e1930" />
   <title>Blast Brawl! Chaos Arena</title>
-  <link rel="stylesheet" href="chaos.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-1: #0e1930;
+      --bg-2: #172d46;
+      --panel: rgba(18, 28, 45, 0.88);
+      --panel-border: rgba(255, 255, 255, 0.12);
+      --text: #edf7ff;
+      --muted: #9fb8cc;
+      --teal: #5fe7cf;
+      --orange: #ff8a67;
+      --yellow: #ffd76d;
+      --pink: #ff77b9;
+      --lime: #bbff7d;
+      --danger: #ff5f7d;
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 50% 30%, var(--bg-2) 0%, var(--bg-1) 100%);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    button, input, select { font: inherit; cursor: pointer; }
+    #app { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+    #gameCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+    /* HUD Topbar */
+    #hud { position: absolute; inset: 0; pointer-events: none; }
+    .topbar { position: absolute; top: 22px; left: 24px; right: 24px; display: flex; align-items: center; justify-content: space-between; z-index: 5; }
+    .hamburger { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid var(--panel-border); border-radius: 14px; color: var(--text); background: rgba(11, 18, 30, 0.75); pointer-events: auto; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.9rem; background: rgba(11, 18, 30, 0.75); padding: 8px 18px; border-radius: 999px; border: 1px solid var(--panel-border); }
+    .brand-badge { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: linear-gradient(135deg, var(--orange), var(--pink)); color: #000; font-size: 0.8rem; }
+    .room-chip { background: rgba(11, 18, 30, 0.75); border: 1px solid var(--panel-border); color: var(--muted); padding: 12px 20px; border-radius: 999px; font-size: 0.75rem; letter-spacing: 0.08em; }
+
+    /* Scoreboard */
+    .scoreboard { position: absolute; top: 26px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; z-index: 5; pointer-events: auto; }
+    .team-panel { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(11, 18, 30, 0.8); border: 1px solid var(--panel-border); border-radius: 14px; }
+    .team-name { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
+    .team-score { font-size: 1.4rem; font-weight: 900; }
+    .mid-panel { background: rgba(11, 18, 30, 0.85); border: 1px solid var(--panel-border); padding: 6px 20px; border-radius: 16px; text-align: center; }
+    .mid-label { display: block; font-size: 0.6rem; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
+    .timer { font-size: 1.5rem; font-weight: 900; letter-spacing: 0.05em; }
+
+    /* Phase Banners & Overlays */
+    .phase-banner { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); z-index: 5; background: rgba(11, 18, 30, 0.8); border: 1px solid var(--panel-border); border-radius: 999px; padding: 6px 16px; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .enemy-direction { position: absolute; top: 132px; left: 50%; transform: translateX(-50%); z-index: 5; font-size: 0.65rem; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; background: rgba(11, 18, 30, 0.6); padding: 4px 12px; border-radius: 999px; }
+
+    /* Bottom HUD */
+    .bottom-hud { position: absolute; left: 24px; right: 24px; bottom: 24px; z-index: 5; display: flex; justify-content: space-between; pointer-events: auto; }
+    .action-box { background: rgba(11, 18, 30, 0.82); border: 1px solid var(--panel-border); border-radius: 16px; padding: 12px 18px; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; gap: 16px; text-transform: uppercase; }
+    .health-track { width: 100px; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; display: inline-block; vertical-align: middle; }
+    .health-track span { display: block; width: 100%; height: 100%; background: linear-gradient(90deg, var(--danger), var(--lime)); border-radius: inherit; transition: width 0.2s ease; }
+
+    /* Screens & Modals */
+    #menuScreen, #lobbyScreen, #resultScreen, #pauseScreen, #hostScreen, #joinScreen, #helpScreen, #aboutScreen, #accountScreen, #mapEditorScreen, #winnerIntro {
+      position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 32px; background: rgba(8, 13, 22, 0.7); backdrop-filter: blur(12px); overflow-y: auto;
+    }
+    .hidden { display: none !important; }
+
+    /* Main Menu Card Layout */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 48px;
+      max-width: 980px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1.2fr 0.85fr;
+      gap: 40px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+      align-items: center;
+    }
+
+    .hero { display: flex; flex-direction: column; }
+    .hero .kicker { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
+    .hero h1 { font-size: 3.5rem; font-weight: 900; line-height: 0.95; margin: 0 0 16px 0; letter-spacing: -0.02em; text-transform: uppercase; }
+    .hero h1 .accent { color: var(--orange); display: inline-block; margin-left: 8px; }
+    .hero .lead { font-size: 0.95rem; line-height: 1.5; color: var(--muted); margin: 0 0 24px 0; }
+
+    .feature-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .feature-pill { font-size: 0.7rem; font-weight: 700; background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); padding: 8px 14px; border-radius: 999px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+
+    .side-panel.home-actions { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+    .side-panel button { width: 100%; text-align: center; justify-content: center; }
+
+    button.primary { background: var(--lime); color: #0a131f; font-weight: 800; border-radius: 16px; padding: 18px 24px; border: none; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; box-shadow: 0 8px 25px rgba(187,255,125,0.25); }
+    button.primary:hover { transform: translateY(-2px); filter: brightness(1.05); }
+
+    button.secondary { background: var(--teal); color: #0a131f; font-weight: 800; border-radius: 16px; padding: 18px 24px; border: none; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; box-shadow: 0 8px 25px rgba(95,231,207,0.2); }
+    button.secondary:hover { transform: translateY(-2px); filter: brightness(1.05); }
+
+    button.ghost { background: rgba(255,255,255,0.05); color: var(--text); font-weight: 700; border-radius: 16px; padding: 16px 24px; border: 1px solid var(--panel-border); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; }
+    button.ghost:hover { background: rgba(255,255,255,0.1); }
+
+    .menu-footer-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    #menuHints { font-size: 0.68rem; color: var(--muted); text-align: center; margin-top: 8px; line-height: 1.4; }
+
+    .page-panel, .lobby-panel, .end-panel, .settings-panel, .editor-panel, .account-panel {
+      background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 36px; max-width: 820px; width: 100%; box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+    }
+    .narrow-panel { max-width: 540px; }
+
+    input, select {
+      width: 100%; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.04); color: var(--text); border-radius: 14px; padding: 14px 18px; font-size: 0.95rem; outline: none; transition: 0.2s;
+    }
+    input:focus, select:focus { border-color: var(--teal); background: rgba(255,255,255,0.07); }
+    label { display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+
+    .result-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+    .result-header h2 { font-size: 1.8rem; font-weight: 900; margin: 4px 0 0 0; text-transform: uppercase; }
+    .result-header .kicker { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; }
+
+    .toast {
+      position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(30px); opacity: 0; z-index: 30; background: rgba(11, 18, 30, 0.92); border: 1px solid var(--panel-border); padding: 14px 24px; border-radius: 999px; font-size: 0.85rem; font-weight: 700; transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none; box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+    }
+    .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
 </head>
 <body>
   <div id="app">
@@ -62,40 +184,31 @@
           <span id="spawnShieldStatus" class="spawn-shield-status" hidden></span>
         </div>
       </div>
-
-      <div id="mobileControls" class="mobile-controls" aria-label="Touch game controls">
-        <div id="moveJoystick" class="move-joystick" role="application" aria-label="Movement joystick">
-          <span class="joystick-directions" aria-hidden="true">▲</span>
-          <span id="joystickKnob" class="joystick-knob" aria-hidden="true"></span>
-        </div>
-        <div class="touch-actions">
-          <button type="button" data-touch="shoot">Fire</button>
-          <button type="button" data-touch="dash">Dash</button>
-          <button type="button" data-touch="use">Shield</button>
-        </div>
-      </div>
     </div>
 
     <!-- Menu Screen -->
     <section id="menuScreen">
       <div class="card">
         <div class="hero">
-          <div class="kicker">⚡ ARCADE BRAWLER & CHAOS QUEST</div>
+          <div class="kicker">Chaos is live</div>
           <h1>Blast <span class="accent">Brawl!</span></h1>
-          <p class="lead">Enter high-octane multi-team arenas, unlock powerful brawlers from armory packs, and conquer unique tactical hazards.</p>
+          <p class="lead">Build a squad, survive chaotic themed arenas, unlock rare brawlers, and chase the top score.</p>
           <div class="feature-row">
             <span class="feature-pill">🔥 Multiplayer Rooms</span>
             <span class="feature-pill">🤖 Smart AI Bots</span>
-            <span class="feature-pill" id="selectedMapFeature">Strategic Maps</span>
+            <span class="feature-pill">🗺️ Strategic Maps</span>
           </div>
         </div>
 
         <div class="side-panel home-actions">
-          <button id="openJoin" class="primary" type="button">Join Game</button>
-          <button id="openHost" class="secondary" type="button">Host Room</button>
-          <button id="accountButton" class="secondary" type="button">Account & Armory Shop</button>
-          <button id="homeHelp" class="ghost" type="button">How to Play</button>
-          <button id="homeAbout" class="ghost" type="button">About</button>
+          <button id="openJoin" class="primary" type="button">Join a game</button>
+          <button id="openHost" class="secondary" type="button">Host a game</button>
+          <button id="accountButton" class="secondary" type="button">Sign up / Log in</button>
+          <div class="menu-footer-btns">
+            <button id="homeHelp" class="ghost" type="button">Help</button>
+            <button id="homeAbout" class="ghost" type="button">About</button>
+          </div>
+          <div id="menuHints">Host a Firebase room and share its code to play with friends.</div>
         </div>
       </div>
     </section>
@@ -105,314 +218,4 @@
       <div class="page-panel">
         <header class="result-header">
           <div>
-            <div class="kicker">MULTIPARTY SETUP</div>
-            <h2>Host a Match</h2>
-          </div>
-          <button class="ghost backHome" type="button">Back</button>
-        </header>
-        <div class="host-grid">
-          <label>Player Name <input id="playerName" type="text" maxlength="18" value="Rookie" autocomplete="nickname" /></label>
-          <label>Bots in Match <select id="botCount" aria-label="Number of bots"></select></label>
-          <label>Teams <select id="teamCount" aria-label="Number of teams"></select></label>
-          <label>Bot Difficulty <select id="botDifficulty" aria-label="Bot difficulty"></select></label>
-          <label>Match Length <select id="matchDuration"><option value="180">3 Minutes</option><option value="300">5 Minutes</option><option value="600">10 Minutes</option></select></label>
-          <label>Lives per Player <select id="matchLives"><option value="1">1 Life</option><option value="3" selected>3 Lives</option><option value="5">5 Lives</option></select></label>
-        </div>
-        <p id="botDifficultyDescription" class="map-description"></p>
-        <div class="host-actions">
-          <button id="customizeMapButton" class="ghost" type="button">Build Custom Map</button>
-          <button id="createRoom" class="primary" type="button">Create Lobby</button>
-        </div>
-        <select id="mapSelect" aria-label="Map selection" hidden></select>
-        <span id="mapDescription" hidden></span>
-      </div>
-    </section>
-
-    <!-- Join Screen -->
-    <section id="joinScreen" class="hidden page-screen">
-      <div class="page-panel narrow-panel">
-        <header class="result-header">
-          <div>
-            <div class="kicker">SQUAD UP</div>
-            <h2>Join Room</h2>
-          </div>
-          <button class="ghost backHome" type="button">Back</button>
-        </header>
-        <label>Player Name <input id="joinPlayerName" type="text" maxlength="18" value="Rookie" autocomplete="nickname" /></label>
-        <label for="joinRoomCode">5-Character Room Code</label>
-        <div class="input-row">
-          <input id="joinRoomCode" type="text" maxlength="5" placeholder="CODE" aria-label="Room code" />
-          <button id="joinButton" class="primary" type="button">Join</button>
-        </div>
-        <p class="map-description">Enter the host's 5-character Firebase room code to join their lobby.</p>
-      </div>
-    </section>
-
-    <!-- Account & Shop Screen -->
-    <section id="accountScreen" class="hidden">
-      <div class="account-panel">
-        <div class="result-header">
-          <div>
-            <div class="kicker">PILOT PROFILE & ARMORY</div>
-            <h2 id="accountTitle">Account & Gear Shop</h2>
-          </div>
-          <button id="closeAccount" class="ghost" type="button">Back</button>
-        </div>
-        
-        <p id="accountStatus" class="account-status" role="status" aria-live="polite">Checking account status...</p>
-        
-        <button id="googleSignIn" class="primary" type="button">Sign in with Google</button>
-        <div id="emailAuthForm" class="email-auth-form">
-          <p class="auth-divider">Or use email</p>
-          <label for="emailAddress">Email address</label>
-          <input id="emailAddress" type="email" autocomplete="email" required maxlength="254" />
-          <label for="emailPassword">Password</label>
-          <input id="emailPassword" type="password" autocomplete="current-password" required minlength="6" />
-          <div class="input-row">
-            <button id="emailSignIn" class="secondary" type="button">Sign In</button>
-            <button id="emailSignUp" class="ghost" type="button">Create Account</button>
-          </div>
-        </div>
-
-        <div id="accountDetails" class="hidden">
-          <div class="account-stats">
-            <span>PLAYER ID<strong id="accountUid">--</strong></span>
-            <span>CAREER XP<strong id="accountXp">0</strong></span>
-            <span>UNLOCKED<strong id="accountSkins">Rookie</strong></span>
-            <span>TOKENS<strong id="accountTokens">0</strong> ✦</span>
-          </div>
-
-          <section class="shop-section">
-            <div class="shop-heading">
-              <div>
-                <h3>Brawler & Armory Shop</h3>
-                <p id="tokenAllowance">Earn 10 tokens per KO · 100 max per day.</p>
-                <p class="shop-note">Guests use the default Rookie brawler. Sign in to open packs and unlock rare brawlers with better HP, speed, and damage!</p>
-              </div>
-              <span class="shop-wallet">✦ <strong id="shopTokenBalance">0</strong> Tokens</span>
-            </div>
-            
-            <div class="shop-category">
-              <h4>Brawler Skins</h4>
-              <div id="skinShop" class="shop-grid"></div>
-            </div>
-            
-            <div class="shop-category">
-              <h4>Blasters</h4>
-              <div id="gunShop" class="shop-grid"></div>
-            </div>
-          </section>
-
-          <label for="equippedGun">Equipped Gun</label>
-          <select id="equippedGun"></select>
-          <label for="equippedSkin">Equipped Brawler</label>
-          <select id="equippedSkin"></select>
-
-          <label for="friendUid">Add Friend by ID</label>
-          <div class="input-row">
-            <input id="friendUid" type="text" maxlength="128" placeholder="Friend Player ID" />
-            <button id="sendFriendRequest" class="secondary" type="button">Send Request</button>
-          </div>
-          <h3>Friend Requests</h3>
-          <div class="friend-list" id="friendRequests"></div>
-          
-          <button id="googleSignOut" class="ghost mt-4" type="button">Sign Out</button>
-        </div>
-
-        <h3>Global XP Leaderboard</h3>
-        <ol id="globalLeaderboard" class="global-leaderboard"><li>Sign in to view rankings.</li></ol>
-      </div>
-    </section>
-
-    <!-- Lobby Screen -->
-    <section id="lobbyScreen" class="hidden">
-      <div class="lobby-panel">
-        <div class="lobby-header">
-          <div>
-            <div class="kicker">BATTLE LOBBY</div>
-            <div class="lobby-code" id="lobbyCodeText">--</div>
-          </div>
-          <div class="lobby-header-actions">
-            <button id="lobbyHamburger" class="hamburger" type="button" aria-label="Open lobby menu">☰</button>
-            <button id="copyRoom" class="ghost" type="button">Copy Code</button>
-          </div>
-        </div>
-
-        <div class="player-list" id="playerList"></div>
-
-        <div class="lobby-minigame">
-          <div>
-            <strong>Warmup Minigame: Star Catch</strong>
-            <span>Tap the star before it moves!</span>
-          </div>
-          <button id="minigameTarget" type="button" aria-label="Catch star">✦</button>
-          <span>Score: <strong id="minigameScore">0</strong></span>
-        </div>
-
-        <div class="lobby-actions">
-          <button id="startMatch" class="primary" type="button">Start Match</button>
-          <button id="leaveLobby" class="ghost" type="button">Leave Lobby</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Result Screen -->
-    <section id="resultScreen" class="hidden">
-      <div class="end-panel">
-        <div class="result-header">
-          <div>
-            <div class="kicker">MATCH CONCLUDED</div>
-            <h2 id="scoreMessage">Chaos Champion</h2>
-            <p id="mvpMessage" class="map-description"></p>
-          </div>
-        </div>
-
-        <div id="resultList" class="result-board"></div>
-        
-        <h3>Full Match Leaderboard</h3>
-        <div class="match-leaderboard-wrap">
-          <table class="match-leaderboard">
-            <thead>
-              <tr><th>Place</th><th>Pilot</th><th>Team</th><th>KOs</th><th>Score</th></tr>
-            </thead>
-            <tbody id="matchLeaderboard"></tbody>
-          </table>
-        </div>
-
-        <p id="xpRewardMessage" class="xp-reward-message"></p>
-        <button id="postMatchAccount" class="secondary hidden" type="button">Sign In to Save XP & Earn Tokens</button>
-
-        <div class="result-actions">
-          <button id="playAgain" class="primary" type="button">Play Again</button>
-          <button id="backToMenu" class="ghost" type="button">Main Menu</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Winner Highlights Intro -->
-    <section id="winnerIntro" class="winner-intro hidden" aria-live="assertive">
-      <div class="winner-intro-panel">
-        <div class="kicker" id="winnerIntroKicker">MATCH HIGHLIGHTS</div>
-        <h1 id="winnerIntroTitle">TEAM WINS!</h1>
-        <p id="winnerIntroCaption">Reliving the biggest plays...</p>
-        <canvas id="winnerReplayCanvas" width="900" height="520" aria-label="Replay canvas"></canvas>
-        <div class="winner-intro-footer">
-          <span id="winnerIntroProgress">Highlight 1</span>
-          <button id="skipWinnerIntro" class="secondary" type="button">Skip Highlights</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Map Editor Screen -->
-    <section id="mapEditorScreen" class="hidden">
-      <div class="editor-panel">
-        <div class="result-header">
-          <div>
-            <div class="kicker">WORKSHOP</div>
-            <h2>Custom Arena Builder</h2>
-          </div>
-        </div>
-        <div class="editor-settings">
-          <label>Map Name <input id="customMapName" maxlength="24" value="My Wild Arena" /></label>
-          <label>Theme <select id="customMapTheme"></select></label>
-          <label>Brush <select id="mapBrush">
-            <option value="wall">Crystal Wall</option>
-            <option value="hazard">Hazard Zone</option>
-            <option value="boost">Speed Pad</option>
-            <option value="clear">Erase</option>
-          </select></label>
-        </div>
-        <p class="editor-help">Click tiles to build. Keep the center lanes open for fluid brawls.</p>
-        <canvas id="mapEditorCanvas" width="720" height="440" aria-label="Map editor grid"></canvas>
-        <div class="editor-actions">
-          <button id="saveCustomMap" class="primary" type="button">Save Map</button>
-          <button id="clearCustomMap" class="secondary" type="button">Clear Board</button>
-          <button id="cancelMapEditor" class="ghost" type="button">Back</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Help Screen -->
-    <section id="helpScreen" class="hidden page-screen">
-      <div class="page-panel help-panel">
-        <header class="result-header">
-          <div>
-            <div class="kicker">FIELD GUIDE</div>
-            <h2>Help & Controls</h2>
-          </div>
-          <button class="ghost backHome" type="button">Back</button>
-        </header>
-        <div class="help-grid">
-          <article>
-            <h3>Movement & Combat</h3>
-            <p><b>WASD / Joysticks</b> to move<br><b>Mouse / Aim</b> to direct attacks<br><b>Click / Space</b> to fire blaster<br><b>Shift</b> to dash<br><b>E</b> for shield</p>
-          </article>
-          <article>
-            <h3>Unique Arenas</h3>
-            <p><b>Bouncy Reef:</b> Slow Tidal Pools.<br><b>Neon Skyline:</b> Fast Boost Pads.<br><b>Ember Foundry:</b> Erupting Lava Vents.<br><b>Frostbite Circuit:</b> Slippery Black Ice.<br><b>Overgrown Temple:</b> Venom Groves.</p>
-          </article>
-          <article>
-            <h3>Brawler Tiers & Armory</h3>
-            <p>Guests play with the default Rookie brawler. Sign in to earn tokens from KOs and unlock rarer brawlers with higher max HP, speed, and damage multipliers!</p>
-          </article>
-          <article>
-            <h3>Multiplayer Rooms</h3>
-            <p>Host a match, copy the 5-character room code, and share it with friends to battle together in real-time.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- About Screen -->
-    <section id="aboutScreen" class="hidden page-screen">
-      <div class="page-panel narrow-panel">
-        <header class="result-header">
-          <div>
-            <div class="kicker">ABOUT</div>
-            <h2>Blast Brawl!</h2>
-          </div>
-          <button class="ghost backHome" type="button">Back</button>
-        </header>
-        <p class="lead">Blast Brawl! is an action-packed arcade brawler featuring multiplayer room hosting, custom map building, smart AI bots, and dynamic environmental hazards.</p>
-      </div>
-    </section>
-
-    <!-- Pause Screen -->
-    <section id="pauseScreen" class="hidden">
-      <div class="settings-panel" id="settingsPanel">
-        <div class="result-header">
-          <div>
-            <div class="kicker">SETTINGS</div>
-            <h2>Match Options</h2>
-          </div>
-        </div>
-        <div class="setting-row">
-          <label for="volume">Volume</label>
-          <input id="volume" type="range" min="0" max="1" step="0.05" value="0.8" />
-        </div>
-        <div class="setting-row">
-          <label for="sensitivity">Mouse Sensitivity</label>
-          <input id="sensitivity" type="range" min="0.5" max="2" step="0.1" value="1" />
-        </div>
-        <div class="settings-actions">
-          <button id="resumeMatch" class="primary" type="button">Resume</button>
-          <button id="leaveGame" class="ghost" type="button">Leave Match</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- In-Game Slide-out Menu -->
-    <div id="gameMenu" class="game-menu hidden">
-      <button id="matchHelp" class="secondary" type="button">Help & Controls</button>
-      <button id="hostPause" class="secondary hidden" type="button">Pause Match</button>
-      <button id="menuLeave" class="secondary" type="button">Leave Match</button>
-      <button id="menuClose" class="ghost" type="button">Close</button>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  </div>
-
-  <script type="module" src="chaos.js"></script>
-</body>
-</html>
+            <div class="k
