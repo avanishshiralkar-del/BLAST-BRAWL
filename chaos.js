@@ -2,6 +2,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const toastEl = document.getElementById('toast');
 const timerEl = document.getElementById('timer');
+const timerLabelEl = document.getElementById('timerLabel');
 const healthValueEl = document.getElementById('healthValue');
 const healthBarEl = document.getElementById('healthBar');
 const koValueEl = document.getElementById('koValue');
@@ -12,27 +13,74 @@ const teamNameLeftEl = document.getElementById('teamNameLeft');
 const teamNameRightEl = document.getElementById('teamNameRight');
 const brawlerClassValueEl = document.getElementById('brawlerClassValue');
 
+// Story Campaign Boss Configuration
+const STORY_STAGES = [
+  {
+    stage: 1,
+    title: 'Chapter I: Overcharge Nova',
+    bossName: 'OVERCHARGE NOVA',
+    bossHp: 600,
+    bossSpeed: 180,
+    bossColor: '#76faff',
+    desc: 'An unstable energy entity firing rapid pulse waves.',
+  },
+  {
+    stage: 2,
+    title: 'Chapter II: Pyre Lord Vulcan',
+    bossName: 'PYRE LORD VULCAN',
+    bossHp: 1100,
+    bossSpeed: 160,
+    bossColor: '#ff8a67',
+    desc: 'Colossal lava titan shooting triple explosive fireballs.',
+  },
+  {
+    stage: 3,
+    title: 'Chapter III: Glacier Titan Aegis',
+    bossName: 'GLACIER TITAN AEGIS',
+    bossHp: 1800,
+    bossSpeed: 140,
+    bossColor: '#ffd76d',
+    desc: 'Heavy armored behemoth with damage resistance shields.',
+  },
+];
+
+const BRAWLERS = {
+  volt: {
+    name: '⚡ VOLT',
+    desc: 'High speed skirmisher with rapid-fire energy bolts.',
+    speed: 260, hp: 100, damage: 24, speedStat: 90, hpStat: 60, damageStat: 65, color: '#76faff',
+  },
+  pyre: {
+    name: '🔥 PYRE',
+    desc: 'Heavy explosive artillery brawler dealing massive area damage.',
+    speed: 220, hp: 110, damage: 38, speedStat: 65, hpStat: 70, damageStat: 95, color: '#ff8a67',
+  },
+  bastion: {
+    name: '🛡️ BASTION',
+    desc: 'Armored juggernaut with extra health and built-in damage mitigation.',
+    speed: 180, hp: 160, damage: 28, speedStat: 45, hpStat: 100, damageStat: 75, color: '#ffd76d',
+  },
+};
+
+let selectedBrawlerKey = 'volt';
+let currentMode = 'arcade';
+let currentStoryStageIndex = 0;
+
 const world = {
   width: 2600,
   height: 1700,
   phase: 'menu',
   timer: 180,
-  matchLives: 3,
   players: [],
   projectiles: [],
-  pickups: [],
   walls: [],
-  teamIds: ['red', 'blue'],
   teamScores: { red: 0, blue: 0 },
   localId: '',
   lastTime: 0,
+  bossEntity: null,
 };
 
 const input = { left: false, right: false, up: false, down: false, shoot: false, pointerX: 0, pointerY: 0 };
-const TEAMS = [
-  { id: 'red', name: 'Coral', color: '#ff8a67' },
-  { id: 'blue', name: 'Cyan', color: '#5fe7cf' },
-];
 
 function showToast(msg) {
   toastEl.textContent = msg;
@@ -50,17 +98,52 @@ function setScreen(screen) {
   document.getElementById('hud').style.display = screen === 'match' ? 'block' : 'none';
 }
 
-function createPlayer(name, team, isBot = false, brawlerClass = 'volt') {
-  let speed = 250; let maxHp = 100; let color = '#76faff';
-  if (brawlerClass === 'pyre') { speed = 230; maxHp = 110; color = '#ff8a67'; }
-  else if (brawlerClass === 'bastion') { speed = 190; maxHp = 150; color = '#ffd76d'; }
+function drawBrawlerPreviews() {
+  const renderPreview = (canvasId, color) => {
+    const pCanvas = document.getElementById(canvasId);
+    if (!pCanvas) return;
+    const pCtx = pCanvas.getContext('2d');
+    pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+    pCtx.fillStyle = color;
+    pCtx.beginPath(); pCtx.arc(40, 40, 22, 0, Math.PI * 2); pCtx.fill();
+    pCtx.strokeStyle = '#fff'; pCtx.lineWidth = 3; pCtx.stroke();
+    pCtx.fillStyle = '#fff'; pCtx.fillRect(40, 37, 24, 6);
+  };
+  renderPreview('previewVolt', BRAWLERS.volt.color);
+  renderPreview('previewPyre', BRAWLERS.pyre.color);
+  renderPreview('previewBastion', BRAWLERS.bastion.color);
+}
 
+function updateBrawlerStatBox(key) {
+  const b = BRAWLERS[key];
+  document.getElementById('statBrawlerName').textContent = b.name;
+  document.getElementById('statBrawlerDesc').textContent = b.desc;
+  document.getElementById('barSpeed').style.width = `${b.speedStat}%`;
+  document.getElementById('barHp').style.width = `${b.hpStat}%`;
+  document.getElementById('barDamage').style.width = `${b.damageStat}%`;
+}
+
+function createPlayer(name, team, isBot = false, brawlerKey = 'volt', isBoss = false) {
+  const b = BRAWLERS[brawlerKey] || BRAWLERS.volt;
   return {
-    id: isBot ? 'bot-' + Math.random() : 'player-' + Math.random(),
-    name, team, x: 600 + Math.random() * 400, y: 600 + Math.random() * 400,
-    vx: 0, vy: 0, radius: 16, speed: isBot ? 200 : speed, maxHp: isBot ? 100 : maxHp, hp: isBot ? 100 : maxHp,
-    lives: 3, weaponLevel: 1, aim: 0, fireCooldown: 0, alive: true, bot: isBot, kills: 0,
-    brawlerClass, color,
+    id: isBoss ? 'boss' : isBot ? 'bot-' + Math.random() : 'player-' + Math.random(),
+    name, team,
+    x: isBoss ? 1300 : 600 + Math.random() * 400,
+    y: isBoss ? 850 : 600 + Math.random() * 400,
+    vx: 0, vy: 0,
+    radius: isBoss ? 38 : 16,
+    speed: isBoss ? 160 : isBot ? 200 : b.speed,
+    maxHp: isBoss ? 800 : b.hp,
+    hp: isBoss ? 800 : b.hp,
+    lives: 3,
+    fireCooldown: 0,
+    alive: true,
+    bot: isBot || isBoss,
+    isBoss,
+    kills: 0,
+    brawlerKey,
+    color: isBoss ? '#ff5f7d' : b.color,
+    damage: b.damage,
   };
 }
 
@@ -74,37 +157,47 @@ function resetMatch() {
     { x: 440, y: 170, w: 240, h: 28 }, { x: 760, y: 260, w: 220, h: 28 },
     { x: 440, y: 860, w: 28, h: 420 }, { x: 1200, y: 400, w: 300, h: 28 },
   ];
-  world.pickups = [
-    { x: 800, y: 500, type: 'token', radius: 14 },
-    { x: 1800, y: 1200, type: 'health', radius: 14 },
-    { x: 400, y: 1200, type: 'gun', radius: 14 },
-  ];
 
-  const botCount = Number(document.getElementById('botCount').value) || 3;
-  const brawlerClass = document.getElementById('brawlerClassSelect').value || 'volt';
-  const playerName = document.getElementById('playerName').value || 'Rookie';
-
-  const p = createPlayer(playerName, 'red', false, brawlerClass);
+  const playerName = document.getElementById('playerName').value || 'Hero';
+  const p = createPlayer(playerName, 'red', false, selectedBrawlerKey);
   world.localId = p.id;
   world.players.push(p);
 
-  for (let i = 0; i < botCount; i++) {
-    const team = i % 2 === 0 ? 'blue' : 'red';
-    const classes = ['volt', 'pyre', 'bastion'];
-    world.players.push(createPlayer(`Bot ${i + 1}`, team, true, classes[i % classes.length]));
+  if (currentMode === 'story') {
+    const stage = STORY_STAGES[currentStoryStageIndex];
+    teamNameLeftEl.textContent = 'HERO';
+    teamNameRightEl.textContent = 'BOSS HP';
+    timerLabelEl.textContent = 'STAGE';
+    timerEl.textContent = `${stage.stage}/3`;
+
+    const boss = createPlayer(stage.bossName, 'blue', true, 'pyre', true);
+    boss.maxHp = stage.bossHp; boss.hp = stage.bossHp; boss.speed = stage.bossSpeed;
+    world.bossEntity = boss;
+    world.players.push(boss);
+    showToast(`STORY MODE: Defeat ${stage.bossName}!`);
+  } else {
+    teamNameLeftEl.textContent = 'CORAL';
+    teamNameRightEl.textContent = 'CYAN';
+    timerLabelEl.textContent = 'CHAOS POINTS';
+    const botCount = Number(document.getElementById('botCount').value) || 3;
+    for (let i = 0; i < botCount; i++) {
+      world.players.push(createPlayer(`Bot ${i + 1}`, 'blue', true, 'volt'));
+    }
   }
-  world.timer = Number(document.getElementById('matchDuration').value) || 180;
-  brawlerClassValueEl.textContent = brawlerClass.toUpperCase();
 }
 
 function updateMatch(dt) {
-  world.timer = Math.max(0, world.timer - dt);
-  const mins = Math.floor(world.timer / 60).toString().padStart(2, '0');
-  const secs = Math.floor(world.timer % 60).toString().padStart(2, '0');
-  timerEl.textContent = `${mins}:${secs}`;
-
-  teamScoreLeftEl.textContent = world.teamScores.red;
-  teamScoreRightEl.textContent = world.teamScores.blue;
+  if (currentMode === 'arcade') {
+    world.timer = Math.max(0, world.timer - dt);
+    const mins = Math.floor(world.timer / 60).toString().padStart(2, '0');
+    const secs = Math.floor(world.timer % 60).toString().padStart(2, '0');
+    timerEl.textContent = `${mins}:${secs}`;
+    teamScoreLeftEl.textContent = world.teamScores.red;
+    teamScoreRightEl.textContent = world.teamScores.blue;
+  } else if (world.bossEntity) {
+    teamScoreLeftEl.textContent = Math.ceil(world.players.find(p => p.id === world.localId)?.hp || 0);
+    teamScoreRightEl.textContent = Math.ceil(world.bossEntity.hp);
+  }
 
   for (const pl of world.players) {
     if (!pl.alive) {
@@ -123,9 +216,17 @@ function updateMatch(dt) {
         const dist = Math.hypot(dx, dy) || 1;
         pl.vx += ((dx / dist) * pl.speed - pl.vx) * 0.1;
         pl.vy += ((dy / dist) * pl.speed - pl.vy) * 0.1;
-        if (dist < 450 && pl.fireCooldown <= 0) {
-          world.projectiles.push({ x: pl.x, y: pl.y, vx: (dx/dist)*650, vy: (dy/dist)*650, team: pl.team, ownerId: pl.id, ttl: 1.2, radius: 6, damage: 24 });
-          pl.fireCooldown = 0.45;
+
+        if (dist < 500 && pl.fireCooldown <= 0) {
+          if (pl.isBoss) {
+            for (let a = -0.3; a <= 0.3; a += 0.3) {
+              const angle = Math.atan2(dy, dx) + a;
+              world.projectiles.push({ x: pl.x, y: pl.y, vx: Math.cos(angle)*600, vy: Math.sin(angle)*600, team: pl.team, ownerId: pl.id, ttl: 1.4, radius: 8, damage: 28 });
+            }
+          } else {
+            world.projectiles.push({ x: pl.x, y: pl.y, vx: (dx/dist)*650, vy: (dy/dist)*650, team: pl.team, ownerId: pl.id, ttl: 1.2, radius: 6, damage: 24 });
+          }
+          pl.fireCooldown = pl.isBoss ? 0.6 : 0.45;
         }
       }
     } else {
@@ -140,23 +241,12 @@ function updateMatch(dt) {
       }
       pl.aim = Math.atan2(input.pointerY - pl.y, input.pointerX - pl.x);
       if (input.shoot && pl.fireCooldown <= 0) {
-        const dmg = pl.brawlerClass === 'pyre' ? 32 : 24;
-        world.projectiles.push({ x: pl.x, y: pl.y, vx: Math.cos(pl.aim)*650, vy: Math.sin(pl.aim)*650, team: pl.team, ownerId: pl.id, ttl: 1.2, radius: 6, damage: dmg });
-        pl.fireCooldown = pl.brawlerClass === 'volt' ? 0.15 : 0.22;
+        world.projectiles.push({ x: pl.x, y: pl.y, vx: Math.cos(pl.aim)*650, vy: Math.sin(pl.aim)*650, team: pl.team, ownerId: pl.id, ttl: 1.2, radius: 6, damage: pl.damage });
+        pl.fireCooldown = pl.brawlerKey === 'volt' ? 0.14 : 0.22;
       }
     }
     pl.fireCooldown = Math.max(0, pl.fireCooldown - dt);
     pl.x += pl.vx * dt; pl.y += pl.vy * dt;
-
-    // Pickups
-    for (let i = world.pickups.length - 1; i >= 0; i--) {
-      const pk = world.pickups[i];
-      if (Math.hypot(pl.x - pk.x, pl.y - pk.y) < pl.radius + pk.radius) {
-        if (!pl.bot) showToast(pk.type === 'token' ? '+1 Token Collected!' : pk.type === 'health' ? 'Health Restored!' : 'Weapon Upgraded!');
-        world.pickups.splice(i, 1);
-        setTimeout(() => world.pickups.push({ x: 500 + Math.random() * 1600, y: 400 + Math.random() * 900, type: pk.type, radius: 14 }), 8000);
-      }
-    }
   }
 
   for (let i = world.projectiles.length - 1; i >= 0; i--) {
@@ -165,18 +255,18 @@ function updateMatch(dt) {
     if (b.ttl <= 0) { world.projectiles.splice(i, 1); continue; }
     for (const pl of world.players) {
       if (!pl.alive || pl.id === b.ownerId || pl.team === b.team) continue;
-      if (Math.hypot(b.x - pl.x, b.y - pl.y) < pl.radius + pl.radius) {
-        let dmg = b.damage;
-        if (pl.brawlerClass === 'bastion') dmg *= 0.8; // Bastion damage resistance
-        pl.hp -= dmg;
+      if (Math.hypot(b.x - pl.x, b.y - pl.y) < pl.radius + b.radius) {
+        pl.hp -= b.damage;
         if (pl.hp <= 0) {
           pl.alive = false;
-          pl.respawnTimer = 2.5;
-          const shooter = world.players.find(p => p.id === b.ownerId);
-          if (shooter) {
-            shooter.kills += 1;
-            world.teamScores[shooter.team] += 12;
-            if (!shooter.bot) showToast('Enemy Eliminated! +12 Points');
+          if (pl.isBoss) {
+            showToast('BOSS DEFEATED!');
+            if (currentStoryStageIndex < STORY_STAGES.length - 1) {
+              currentStoryStageIndex++;
+              setTimeout(resetMatch, 2000);
+            } else {
+              showToast('STORY CAMPAIGN COMPLETE!');
+            }
           }
         }
         world.projectiles.splice(i, 1);
@@ -198,27 +288,16 @@ function drawGridAndArena() {
   ctx.fillStyle = '#1d5360';
   ctx.fillRect(0, 0, world.width, world.height);
 
-  ctx.strokeStyle = 'rgba(139,245,227,0.1)';
-  ctx.lineWidth = 1;
-  const gridSize = 100;
-  for (let x = 0; x < world.width; x += gridSize) {
+  ctx.strokeStyle = 'rgba(139,245,227,0.1)'; ctx.lineWidth = 1;
+  for (let x = 0; x < world.width; x += 100) {
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, world.height); ctx.stroke();
   }
-  for (let y = 0; y < world.height; y += gridSize) {
+  for (let y = 0; y < world.height; y += 100) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(world.width, y); ctx.stroke();
   }
 
   for (const w of world.walls) {
-    ctx.fillStyle = '#287f83';
-    ctx.fillRect(w.x, w.y, w.w, w.h);
-  }
-
-  for (const pk of world.pickups) {
-    ctx.fillStyle = pk.type === 'token' ? '#ffd76d' : pk.type === 'health' ? '#5fe7cf' : '#ff8a67';
-    ctx.beginPath(); ctx.arc(pk.x, pk.y, pk.radius, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = '#0e1930'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(pk.type === 'token' ? '✦' : pk.type === 'health' ? '+' : '⚡', pk.x, pk.y + 4);
+    ctx.fillStyle = '#287f83'; ctx.fillRect(w.x, w.y, w.w, w.h);
   }
 }
 
@@ -234,12 +313,12 @@ function draw() {
 
   for (const pl of world.players) {
     if (!pl.alive) continue;
-    ctx.fillStyle = pl.color || TEAMS.find(t => t.id === pl.team)?.color || '#fff';
+    ctx.fillStyle = pl.color || '#fff';
     ctx.beginPath(); ctx.arc(pl.x, pl.y, pl.radius, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(`${pl.name} [${pl.brawlerClass.toUpperCase()}]`, pl.x, pl.y - 24);
+    ctx.fillText(pl.name, pl.x, pl.y - (pl.radius + 10));
   }
 
   for (const b of world.projectiles) {
@@ -280,10 +359,30 @@ canvas.addEventListener('mousemove', e => {
   input.pointerX = e.clientX - rect.left - canvas.width / 2 + (local?.x || 0);
   input.pointerY = e.clientY - rect.top - canvas.height / 2 + (local?.y || 0);
 });
-canvas.addEventListener('mousedown', () => { input.shoot = true; });
-canvas.addEventListener('mouseup', () => { input.shoot = false; });
 
-document.getElementById('openHost').addEventListener('click', () => setScreen('host'));
+document.querySelectorAll('.brawler-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.brawler-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    selectedBrawlerKey = card.dataset.brawler;
+    brawlerClassValueEl.textContent = selectedBrawlerKey.toUpperCase();
+    updateBrawlerStatBox(selectedBrawlerKey);
+  });
+});
+
+document.getElementById('openStory').addEventListener('click', () => {
+  currentMode = 'story';
+  currentStoryStageIndex = 0;
+  document.getElementById('setupTitle').textContent = 'Story Mode Campaign';
+  setScreen('host');
+});
+
+document.getElementById('openHost').addEventListener('click', () => {
+  currentMode = 'arcade';
+  document.getElementById('setupTitle').textContent = 'Host Arcade Game';
+  setScreen('host');
+});
+
 document.getElementById('openJoin').addEventListener('click', () => setScreen('join'));
 document.getElementById('accountButton').addEventListener('click', () => setScreen('account'));
 document.getElementById('homeHelp').addEventListener('click', () => setScreen('help'));
@@ -294,9 +393,10 @@ document.getElementById('createRoom').addEventListener('click', () => {
   resetMatch();
   world.phase = 'match';
   setScreen('match');
-  showToast('Match started with unique brawler class!');
 });
 document.querySelectorAll('.backHome').forEach(b => b.addEventListener('click', () => setScreen('menu')));
 
+drawBrawlerPreviews();
+updateBrawlerStatBox('volt');
 setScreen('menu');
 requestAnimationFrame(loop);
