@@ -10,6 +10,7 @@ const teamScoreLeftEl = document.getElementById('teamScoreLeft');
 const teamScoreRightEl = document.getElementById('teamScoreRight');
 const teamNameLeftEl = document.getElementById('teamNameLeft');
 const teamNameRightEl = document.getElementById('teamNameRight');
+const brawlerClassValueEl = document.getElementById('brawlerClassValue');
 
 const world = {
   width: 2600,
@@ -49,12 +50,17 @@ function setScreen(screen) {
   document.getElementById('hud').style.display = screen === 'match' ? 'block' : 'none';
 }
 
-function createPlayer(name, team, isBot = false) {
+function createPlayer(name, team, isBot = false, brawlerClass = 'volt') {
+  let speed = 250; let maxHp = 100; let color = '#76faff';
+  if (brawlerClass === 'pyre') { speed = 230; maxHp = 110; color = '#ff8a67'; }
+  else if (brawlerClass === 'bastion') { speed = 190; maxHp = 150; color = '#ffd76d'; }
+
   return {
     id: isBot ? 'bot-' + Math.random() : 'player-' + Math.random(),
     name, team, x: 600 + Math.random() * 400, y: 600 + Math.random() * 400,
-    vx: 0, vy: 0, radius: 16, speed: isBot ? 200 : 235, maxHp: 100, hp: 100,
-    lives: 3, weaponLevel: 0, aim: 0, fireCooldown: 0, alive: true, bot: isBot, kills: 0,
+    vx: 0, vy: 0, radius: 16, speed: isBot ? 200 : speed, maxHp: isBot ? 100 : maxHp, hp: isBot ? 100 : maxHp,
+    lives: 3, weaponLevel: 1, aim: 0, fireCooldown: 0, alive: true, bot: isBot, kills: 0,
+    brawlerClass, color,
   };
 }
 
@@ -66,24 +72,29 @@ function resetMatch() {
     { x: 0, y: 0, w: world.width, h: 18 }, { x: 0, y: world.height - 18, w: world.width, h: 18 },
     { x: 0, y: 0, w: 18, h: world.height }, { x: world.width - 18, y: 0, w: 18, h: world.height },
     { x: 440, y: 170, w: 240, h: 28 }, { x: 760, y: 260, w: 220, h: 28 },
-    { x: 440, y: 860, w: 28, h: 420 },
+    { x: 440, y: 860, w: 28, h: 420 }, { x: 1200, y: 400, w: 300, h: 28 },
   ];
   world.pickups = [
-    { x: 800, y: 500, type: 'token', radius: 12 },
+    { x: 800, y: 500, type: 'token', radius: 14 },
     { x: 1800, y: 1200, type: 'health', radius: 14 },
     { x: 400, y: 1200, type: 'gun', radius: 14 },
   ];
 
   const botCount = Number(document.getElementById('botCount').value) || 3;
-  const p = createPlayer(document.getElementById('playerName').value || 'Rookie', 'red', false);
+  const brawlerClass = document.getElementById('brawlerClassSelect').value || 'volt';
+  const playerName = document.getElementById('playerName').value || 'Rookie';
+
+  const p = createPlayer(playerName, 'red', false, brawlerClass);
   world.localId = p.id;
   world.players.push(p);
 
   for (let i = 0; i < botCount; i++) {
     const team = i % 2 === 0 ? 'blue' : 'red';
-    world.players.push(createPlayer(`Bot ${i + 1}`, team, true));
+    const classes = ['volt', 'pyre', 'bastion'];
+    world.players.push(createPlayer(`Bot ${i + 1}`, team, true, classes[i % classes.length]));
   }
   world.timer = Number(document.getElementById('matchDuration').value) || 180;
+  brawlerClassValueEl.textContent = brawlerClass.toUpperCase();
 }
 
 function updateMatch(dt) {
@@ -97,7 +108,7 @@ function updateMatch(dt) {
 
   for (const pl of world.players) {
     if (!pl.alive) {
-      pl.respawnTimer = (pl.respawnTimer || 2) - dt;
+      pl.respawnTimer = (pl.respawnTimer || 2.5) - dt;
       if (pl.respawnTimer <= 0) {
         pl.x = 600 + Math.random() * 400; pl.y = 600 + Math.random() * 400;
         pl.hp = pl.maxHp; pl.alive = true; pl.respawnTimer = 0;
@@ -113,7 +124,7 @@ function updateMatch(dt) {
         pl.vx += ((dx / dist) * pl.speed - pl.vx) * 0.1;
         pl.vy += ((dy / dist) * pl.speed - pl.vy) * 0.1;
         if (dist < 450 && pl.fireCooldown <= 0) {
-          world.projectiles.push({ x: pl.x, y: pl.y, vx: (dx/dist)*650, vy: (dy/dist)*650, team: pl.team, ownerId: pl.id, ttl: 1.2, radius: 6 });
+          world.projectiles.push({ x: pl.x, y: pl.y, vx: (dx/dist)*650, vy: (dy/dist)*650, team: pl.team, ownerId: pl.id, ttl: 1.2, radius: 6, damage: 24 });
           pl.fireCooldown = 0.45;
         }
       }
@@ -129,12 +140,23 @@ function updateMatch(dt) {
       }
       pl.aim = Math.atan2(input.pointerY - pl.y, input.pointerX - pl.x);
       if (input.shoot && pl.fireCooldown <= 0) {
-        world.projectiles.push({ x: pl.x, y: pl.y, vx: Math.cos(pl.aim)*650, vy: Math.sin(pl.aim)*650, team: pl.team, ownerId: pl.id, ttl: 1.2, radius: 6 });
-        pl.fireCooldown = 0.2;
+        const dmg = pl.brawlerClass === 'pyre' ? 32 : 24;
+        world.projectiles.push({ x: pl.x, y: pl.y, vx: Math.cos(pl.aim)*650, vy: Math.sin(pl.aim)*650, team: pl.team, ownerId: pl.id, ttl: 1.2, radius: 6, damage: dmg });
+        pl.fireCooldown = pl.brawlerClass === 'volt' ? 0.15 : 0.22;
       }
     }
     pl.fireCooldown = Math.max(0, pl.fireCooldown - dt);
     pl.x += pl.vx * dt; pl.y += pl.vy * dt;
+
+    // Pickups
+    for (let i = world.pickups.length - 1; i >= 0; i--) {
+      const pk = world.pickups[i];
+      if (Math.hypot(pl.x - pk.x, pl.y - pk.y) < pl.radius + pk.radius) {
+        if (!pl.bot) showToast(pk.type === 'token' ? '+1 Token Collected!' : pk.type === 'health' ? 'Health Restored!' : 'Weapon Upgraded!');
+        world.pickups.splice(i, 1);
+        setTimeout(() => world.pickups.push({ x: 500 + Math.random() * 1600, y: 400 + Math.random() * 900, type: pk.type, radius: 14 }), 8000);
+      }
+    }
   }
 
   for (let i = world.projectiles.length - 1; i >= 0; i--) {
@@ -144,7 +166,9 @@ function updateMatch(dt) {
     for (const pl of world.players) {
       if (!pl.alive || pl.id === b.ownerId || pl.team === b.team) continue;
       if (Math.hypot(b.x - pl.x, b.y - pl.y) < pl.radius + pl.radius) {
-        pl.hp -= 24;
+        let dmg = b.damage;
+        if (pl.brawlerClass === 'bastion') dmg *= 0.8; // Bastion damage resistance
+        pl.hp -= dmg;
         if (pl.hp <= 0) {
           pl.alive = false;
           pl.respawnTimer = 2.5;
@@ -152,6 +176,7 @@ function updateMatch(dt) {
           if (shooter) {
             shooter.kills += 1;
             world.teamScores[shooter.team] += 12;
+            if (!shooter.bot) showToast('Enemy Eliminated! +12 Points');
           }
         }
         world.projectiles.splice(i, 1);
@@ -169,11 +194,10 @@ function updateMatch(dt) {
   }
 }
 
-function drawGridAndArena(cx, cy) {
+function drawGridAndArena() {
   ctx.fillStyle = '#1d5360';
   ctx.fillRect(0, 0, world.width, world.height);
 
-  // Draw Grid Lines
   ctx.strokeStyle = 'rgba(139,245,227,0.1)';
   ctx.lineWidth = 1;
   const gridSize = 100;
@@ -184,18 +208,17 @@ function drawGridAndArena(cx, cy) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(world.width, y); ctx.stroke();
   }
 
-  // Draw Walls
   for (const w of world.walls) {
     ctx.fillStyle = '#287f83';
     ctx.fillRect(w.x, w.y, w.w, w.h);
   }
 
-  // Draw Pickups
   for (const pk of world.pickups) {
     ctx.fillStyle = pk.type === 'token' ? '#ffd76d' : pk.type === 'health' ? '#5fe7cf' : '#ff8a67';
     ctx.beginPath(); ctx.arc(pk.x, pk.y, pk.radius, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#0e1930'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(pk.type === 'token' ? '✦' : pk.type === 'health' ? '+' : '⚡', pk.x, pk.y + 3);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#0e1930'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(pk.type === 'token' ? '✦' : pk.type === 'health' ? '+' : '⚡', pk.x, pk.y + 4);
   }
 }
 
@@ -207,16 +230,16 @@ function draw() {
 
   ctx.save();
   ctx.translate(canvas.width / 2 - cx, canvas.height / 2 - cy);
-  drawGridAndArena(cx, cy);
+  drawGridAndArena();
 
   for (const pl of world.players) {
     if (!pl.alive) continue;
-    ctx.fillStyle = TEAMS.find(t => t.id === pl.team)?.color || '#fff';
+    ctx.fillStyle = pl.color || TEAMS.find(t => t.id === pl.team)?.color || '#fff';
     ctx.beginPath(); ctx.arc(pl.x, pl.y, pl.radius, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
 
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(pl.name, pl.x, pl.y - 24);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(`${pl.name} [${pl.brawlerClass.toUpperCase()}]`, pl.x, pl.y - 24);
   }
 
   for (const b of world.projectiles) {
@@ -271,7 +294,7 @@ document.getElementById('createRoom').addEventListener('click', () => {
   resetMatch();
   world.phase = 'match';
   setScreen('match');
-  showToast('Match started!');
+  showToast('Match started with unique brawler class!');
 });
 document.querySelectorAll('.backHome').forEach(b => b.addEventListener('click', () => setScreen('menu')));
 
