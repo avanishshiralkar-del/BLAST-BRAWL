@@ -70,7 +70,6 @@ const world = {
   roomCode: '',
   timer: 180,
   matchLives: 3,
-  mapSpinRemaining: 0,
   cameraZoom: 1,
   countdownRemaining: 0,
   networkStateAge: 0,
@@ -100,6 +99,8 @@ const world = {
   matchHighlights: [],
   activeHighlight: null,
   replayCaptureTimer: 0,
+  winnerIntroClipIndex: 0,
+  winnerIntroClipStartedAt: 0,
   lastTime: 0,
   settings: { volume: 0.8, sensitivity: 1 },
   mapId: 'reef',
@@ -128,12 +129,38 @@ const TEAMS = [
   { id: 'gold', name: 'Gold', color: '#ffd76d' },
 ];
 
+// --- UNIQUE STRATEGIC MAPS ---
 const MAPS = {
-  reef: { name: 'Bouncy Reef', description: 'Coral barriers and tides.', theme: 'reef' },
-  neon: { name: 'Neon Skyline', description: 'Night-lit lanes with speed pads.', theme: 'neon' },
-  ember: { name: 'Ember Foundry', description: 'Molten workshop with lava vents.', theme: 'ember' },
-  frost: { name: 'Frostbite Circuit', description: 'Slippery ice maze.', theme: 'frost' },
-  jungle: { name: 'Overgrown Temple', description: 'Living jungle vines.', theme: 'jungle' },
+  reef: {
+    name: 'Bouncy Reef',
+    description: 'Features a central Tidal Pool that slows movement, forcing tactical flanking and positioning around coral chokepoints.',
+    theme: 'reef',
+    special: 'TIDAL POOL',
+  },
+  neon: {
+    name: 'Neon Skyline',
+    description: 'High-speed lanes crisscrossed by Boost Pads. Rewards fast reflexes, aggressive dashes, and long-range sniper control.',
+    theme: 'neon',
+    special: 'BOOST PADS',
+  },
+  ember: {
+    name: 'Ember Foundry',
+    description: 'A tight workshop where periodic Lava Vents erupt, punishing campers and forcing constant, mobile skirmishes.',
+    theme: 'ember',
+    special: 'LAVA VENTS',
+  },
+  frost: {
+    name: 'Frostbite Circuit',
+    description: 'Slippery Black Ice patches cause momentum drift. Precision steering and corner-banking determine who wins engagements.',
+    theme: 'frost',
+    special: 'BLACK ICE',
+  },
+  jungle: {
+    name: 'Overgrown Temple',
+    description: 'Venom Groves restrict vision and deal continuous damage. Controlling open courtyards is vital for survival.',
+    theme: 'jungle',
+    special: 'VENOM GROVE',
+  },
 };
 
 const MAP_THEMES = {
@@ -151,13 +178,19 @@ const BOT_SKILLS = {
   nightmare: { label: 'Nightmare', speed: 1.2, distance: 690, jitter: 0.035, fireDelay: 0.2 },
 };
 
+// --- BRAWLER / SKIN TIERS & STAT SCALING ---
 const SKINS = [
-  { id: 'rookie', name: 'Rookie', price: 0, rarity: 'Common', color: '#edf7ff', ability: 'Balanced starting skin.', speedMultiplier: 1, damageMultiplier: 1, maxHp: 100, damageResistance: 0 },
-  { id: 'neon', name: 'Neon', price: 100, rarity: 'Rare', color: '#76faff', ability: '10% faster movement.', speedMultiplier: 1.1, damageMultiplier: 1, maxHp: 100, damageResistance: 0 },
+  { id: 'rookie', name: 'Rookie (Default)', price: 0, rarity: 'Common', color: '#edf7ff', ability: 'Standard base stats for guests.', speedMultiplier: 1, damageMultiplier: 1, maxHp: 100, damageResistance: 0 },
+  { id: 'neon', name: 'Neon Scout', price: 100, rarity: 'Rare', color: '#76faff', ability: 'Quickstep: +10% movement speed.', speedMultiplier: 1.1, damageMultiplier: 1, maxHp: 100, damageResistance: 0 },
+  { id: 'ember', name: 'Ember Berserker', price: 250, rarity: 'Epic', color: '#ff8657', ability: 'Hotshot: +12% damage & 110 HP.', speedMultiplier: 1, damageMultiplier: 1.12, maxHp: 110, damageResistance: 0 },
+  { id: 'frost', name: 'Glacier Guardian', price: 500, rarity: 'Legendary', color: '#d7fbff', ability: 'Titan: +8% speed, +18% damage, 120 HP, 10% resistance.', speedMultiplier: 1.08, damageMultiplier: 1.18, maxHp: 120, damageResistance: 0.1 },
 ];
 
 const GUNS = [
-  { id: 'pulse', name: 'Pulse', price: 0, rarity: 'Common', damage: 24, description: 'Starter blaster.' },
+  { id: 'pulse', name: 'Pulse Blaster', price: 0, rarity: 'Common', damage: 24, description: 'Reliable starter weapon.' },
+  { id: 'burst', name: 'Burst Rifle', price: 100, rarity: 'Rare', damage: 30, description: 'Faster punchier fire.' },
+  { id: 'scatter', name: 'Scatter Shot', price: 250, rarity: 'Epic', damage: 40, description: 'Wide heavy spread.' },
+  { id: 'rail', name: 'Railgun', price: 500, rarity: 'Legendary', damage: 58, description: 'Devastating sniper blast.' },
 ];
 
 let firebaseApp = null;
@@ -174,11 +207,8 @@ let networkStops = [];
 let remoteInputs = {};
 let lastNetworkInputAt = 0;
 let lastNetworkStateAt = 0;
-
-// THROTTLING CONSTANTS TO REDUCE MULTIPLAYER LAG & BANDWIDTH
-const NETWORK_INPUT_INTERVAL_MS = 60; // ~16 inputs per second for snappy response without spamming
-const NETWORK_STATE_INTERVAL_MS = 120; // ~8 state broadcasts per second for ultra-smooth netcode
-
+const NETWORK_INPUT_INTERVAL_MS = 60;
+const NETWORK_STATE_INTERVAL_MS = 120;
 let networkInputWritePending = false;
 let networkStateWritePending = false;
 let lastAppliedMatchId = '';
@@ -196,14 +226,6 @@ function showToast(message) {
   toastTimer.id = setTimeout(() => toastEl.classList.remove('visible'), 1700);
 }
 
-function showNetworkError(message) {
-  accountStatusEl.textContent = message;
-}
-
-function describeFirebaseError(error) {
-  return error?.message || 'Unknown Firebase error.';
-}
-
 function setScreen(screen) {
   menuScreen.classList.toggle('hidden', screen !== 'menu');
   document.getElementById('hostScreen').classList.toggle('hidden', screen !== 'host');
@@ -218,139 +240,28 @@ function setScreen(screen) {
   hud.style.display = screen === 'match' ? 'block' : 'none';
 }
 
-function randomCode() {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  return Array.from({ length: 5 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
-}
-
-function getNetworkPlayerData(player, uid = networkUid) {
-  return {
-    uid,
-    name: player.name,
-    team: player.team,
-    bot: Boolean(player.bot),
-    skinId: player.skinId,
-    weaponLevel: player.weaponLevel,
-    speed: player.speed,
-    maxHp: player.maxHp,
-    damageMultiplier: player.damageMultiplier,
-    damageResistance: player.damageResistance,
-  };
-}
-
-function createNetworkPlayer(data) {
-  const player = createPlayer(data.name, data.team || world.teamIds[0], Boolean(data.bot));
-  player.id = data.bot ? data.uid : `player-${data.uid}`;
-  player.networkUid = data.uid;
-  player.name = String(data.name || 'Rookie').slice(0, 18);
-  player.team = world.teamIds.includes(data.team) ? data.team : world.teamIds[0];
-  return player;
-}
-
-function stopNetworkListeners() {
-  for (const stop of networkStops) stop();
-  networkStops = [];
-  remoteInputs = {};
-}
-
-async function leaveNetworkRoom() {
-  stopNetworkListeners();
-  const roomCode = world.roomCode;
-  const isHost = world.isHost;
-  if (!isHost && networkInputExists && roomCode && firebaseApi && realtimeDb && networkUid) {
-    await firebaseApi.remove(firebaseApi.ref(realtimeDb, `rooms/${roomCode}/inputs/${networkUid}`)).catch(() => {});
-  }
-  if (networkPlayerRef && firebaseApi) {
-    await firebaseApi.remove(networkPlayerRef).catch(() => {});
-  }
-  if (isHost && networkRoomRef && firebaseApi) {
-    await firebaseApi.remove(networkRoomRef).catch(() => {});
-  }
-  networkPlayerRef = null;
-  networkInputExists = false;
-  networkRoomRef = null;
-  networkHostUid = '';
-  world.roomCode = '';
-  world.isHost = false;
-}
-
-function subscribeToRoom(roomData) {
-  stopNetworkListeners();
-  if (!networkRoomRef) return;
-  const playersRef = firebaseApi.ref(realtimeDb, `rooms/${world.roomCode}/players`);
-  const inputsRef = firebaseApi.ref(realtimeDb, `rooms/${world.roomCode}/inputs`);
-  const matchRef = firebaseApi.ref(realtimeDb, `rooms/${world.roomCode}/match`);
-  const stateRef = firebaseApi.ref(realtimeDb, `rooms/${world.roomCode}/state`);
-
-  const playersStop = firebaseApi.onValue(playersRef, (snapshot) => {
-    const players = snapshot.val() || {};
-    for (const [uid, data] of Object.entries(players)) {
-      if (!world.players.some((p) => p.networkUid === uid)) {
-        world.players.push(createNetworkPlayer({ ...data, uid }));
-      }
-    }
-  });
-
-  const inputsStop = firebaseApi.onValue(inputsRef, (snapshot) => {
-    remoteInputs = snapshot.val() || {};
-    if (world.isHost) {
-      for (const player of world.players) {
-        if (player.networkUid && player.networkUid !== networkUid) {
-          player.networkInput = remoteInputs[player.networkUid] || {};
-        }
-      }
-    }
-  });
-
-  const stateStop = firebaseApi.onValue(stateRef, (snapshot) => {
-    const state = snapshot.val();
-    if (!state || world.isHost) return;
-    applyNetworkState(state);
-  });
-
-  networkStops.push(playersStop, inputsStop, stateStop);
-}
-
-function applyNetworkState(state) {
-  world.phase = state.phase;
-  world.timer = Number(state.timer) || 0;
-  world.teamScores = state.teamScores || world.teamScores;
-  
-  if (Array.isArray(state.players)) {
-    const existing = new Map(world.players.map((p) => [p.id, p]));
-    world.players = state.players.map((snapshot) => {
-      const playerId = !snapshot.bot && snapshot.networkUid ? `player-${snapshot.networkUid}` : snapshot.id;
-      const previous = existing.get(playerId) || {};
-      const player = { ...previous, ...snapshot, id: playerId };
-      
-      // SMOOTH LERP INTERPOLATION FOR GUESTS TO ELIMINATE STUTTER/LAG
-      if (!world.isHost && previous.alive && Number.isFinite(previous.x)) {
-        player.x = previous.x + (snapshot.x - previous.x) * 0.45;
-        player.y = previous.y + (snapshot.y - previous.y) * 0.45;
-      }
-      return player;
-    });
-  }
-  if (Array.isArray(state.projectiles)) world.projectiles = state.projectiles;
-}
-
 function createPlayer(name, team, isBot = false) {
-  const spawn = { x: 500 + Math.random() * 200, y: 500 + Math.random() * 200 };
+  // GUESTS ARE FORCED TO USE DEFAULT 'ROOKIE'. SIGNED-IN USERS USE EQUIPPED UNLOCKS.
+  const skin = (!isBot && signedInUser)
+    ? SKINS.find((e) => e.id === signedInUser.equippedSkin) || SKINS[0]
+    : SKINS[0];
+    
+  const maxHp = isBot ? 100 : skin.maxHp;
   return {
     id: isBot ? `bot-${randomId()}` : `player-${randomId()}`,
     name: name || 'Rookie',
     team,
-    x: spawn.x,
-    y: spawn.y,
+    x: 500 + Math.random() * 200,
+    y: 500 + Math.random() * 200,
     vx: 0,
     vy: 0,
     radius: 16,
-    speed: isBot ? 200 : 235,
-    maxHp: 100,
-    hp: 100,
-    skinId: 'rookie',
-    damageMultiplier: 1,
-    damageResistance: 0,
+    speed: isBot ? 200 : 235 * skin.speedMultiplier,
+    maxHp,
+    hp: maxHp,
+    skinId: isBot ? 'rookie' : skin.id,
+    damageMultiplier: isBot ? 1 : skin.damageMultiplier,
+    damageResistance: isBot ? 0 : skin.damageResistance,
     lives: world.matchLives,
     weaponLevel: 0,
     maxWeaponLevel: 3,
@@ -364,15 +275,7 @@ function createPlayer(name, team, isBot = false) {
     bot: isBot,
     score: 0,
     kills: 0,
-    botStrafePhase: Math.random() * Math.PI * 2,
   };
-}
-
-function overlapsWall(x, y, margin = 48) {
-  return world.walls.some((wall) =>
-    x + margin > wall.x && x - margin < wall.x + wall.w &&
-    y + margin > wall.y && y - margin < wall.y + wall.h
-  );
 }
 
 function setupArena() {
@@ -426,16 +329,6 @@ function collideWithWalls(player, nextX, nextY) {
   return { x: clamp(nextX, radius + 20, world.width - radius - 20), y: clamp(nextY, radius + 20, world.height - radius - 20) };
 }
 
-function getNearestEnemy(player) {
-  let best = null; let bestDist = Infinity;
-  for (const other of world.players) {
-    if (other.id === player.id || other.team === player.team || !other.alive) continue;
-    const dist = (other.x - player.x) ** 2 + (other.y - player.y) ** 2;
-    if (dist < bestDist) { bestDist = dist; best = other; }
-  }
-  return best;
-}
-
 function movePlayer(player, dt) {
   if (!player.alive) {
     player.respawnTimer -= dt;
@@ -450,16 +343,15 @@ function movePlayer(player, dt) {
 
   if (player.bot) {
     const skill = BOT_SKILLS[world.botDifficulty] || BOT_SKILLS.medium;
-    const target = getNearestEnemy(player);
+    const target = world.players.find((p) => p.id !== player.id && p.team !== player.team && p.alive);
     if (target) {
       const dx = target.x - player.x;
       const dy = target.y - player.y;
       const dist = Math.hypot(dx, dy) || 1;
-      const moveX = dx / dist; const moveY = dy / dist;
       const speed = player.speed * skill.speed;
 
-      player.vx += (moveX * speed - player.vx) * (1 - Math.exp(-8 * dt));
-      player.vy += (moveY * speed - player.vy) * (1 - Math.exp(-8 * dt));
+      player.vx += ((dx / dist) * speed - player.vx) * (1 - Math.exp(-8 * dt));
+      player.vy += ((dy / dist) * speed - player.vy) * (1 - Math.exp(-8 * dt));
 
       if (dist < skill.distance && player.fireCooldown <= 0) {
         shootProjectile(player, Math.atan2(dy, dx));
@@ -482,11 +374,6 @@ function movePlayer(player, dt) {
 
     player.aim = Number.isFinite(controls.aim) ? controls.aim : Math.atan2(input.pointerY - player.y, input.pointerX - player.x);
 
-    if (controls.dash && player.dashCooldown <= 0) {
-      player.vx += Math.cos(player.aim) * 420;
-      player.vy += Math.sin(player.aim) * 420;
-      player.dashCooldown = 1.25;
-    }
     if (controls.shoot && player.fireCooldown <= 0) {
       shootProjectile(player, player.aim);
       player.fireCooldown = 0.17;
@@ -508,7 +395,7 @@ function shootProjectile(player, angle) {
     vy: Math.sin(angle) * 690,
     team: player.team,
     ownerId: player.id,
-    damage: 24,
+    damage: 24 * player.damageMultiplier,
     ttl: 1.15,
     radius: 6,
   });
@@ -523,57 +410,20 @@ function updateProjectiles(dt) {
     for (const player of world.players) {
       if (!player.alive || player.id === b.ownerId || player.team === b.team) continue;
       if ((b.x - player.x) ** 2 + (b.y - player.y) ** 2 < (player.radius + b.radius) ** 2) {
-        player.hp -= b.damage;
+        player.hp -= b.damage * (1 - player.damageResistance);
         if (player.hp <= 0) {
           player.alive = false; player.respawnTimer = 2;
           const shooter = world.players.find((p) => p.id === b.ownerId);
-          if (shooter) shooter.kills += 1;
+          if (shooter) {
+            shooter.kills += 1;
+            shooter.score += 10;
+          }
         }
         world.projectiles.splice(i, 1);
         break;
       }
     }
   }
-}
-
-// THROTTLED NETWORK INPUT SENDER (Reduces network lag & packet flood)
-function publishNetworkInput(timestamp) {
-  if (world.isHost || !networkPlayerRef || !firebaseApi || networkInputWritePending || timestamp - lastNetworkInputAt < NETWORK_INPUT_INTERVAL_MS) return;
-  lastNetworkInputAt = timestamp;
-  const local = world.players.find((p) => p.id === world.localId);
-  if (!local) return;
-
-  const controls = {
-    left: input.left, right: input.right, up: input.up, down: input.down,
-    shoot: input.shoot, dash: input.dash, aim: Math.atan2(input.pointerY - local.y, input.pointerX - local.x),
-  };
-  networkInputWritePending = true;
-  void firebaseApi.set(firebaseApi.ref(realtimeDb, `rooms/${world.roomCode}/inputs/${networkUid}`), controls).then(() => {
-    networkInputWritePending = false;
-    networkInputExists = true;
-  }).catch(() => { networkInputWritePending = false; });
-}
-
-// THROTTLED HOST STATE BROADCASTER (Reduces bandwidth and lag peaks)
-function publishNetworkState(timestamp) {
-  if (!world.isHost || !networkRoomRef || !firebaseApi || networkStateWritePending || timestamp - lastNetworkStateAt < NETWORK_STATE_INTERVAL_MS) return;
-  lastNetworkStateAt = timestamp;
-
-  const state = {
-    sentAt: Date.now(),
-    phase: world.phase,
-    timer: world.timer,
-    teamScores: world.teamScores,
-    players: world.players.map((p) => ({
-      id: p.id, networkUid: p.networkUid, name: p.name, team: p.team, bot: p.bot,
-      x: p.x, y: p.y, vx: p.vx, vy: p.vy, hp: p.hp, maxHp: p.maxHp, alive: p.alive,
-    })),
-    projectiles: world.projectiles,
-  };
-  networkStateWritePending = true;
-  void firebaseApi.set(firebaseApi.ref(realtimeDb, `rooms/${world.roomCode}/state`), state).then(() => {
-    networkStateWritePending = false;
-  }).catch(() => { networkStateWritePending = false; });
 }
 
 function updateMatch(dt) {
@@ -587,13 +437,6 @@ function updateMatch(dt) {
   if (local) movePlayer(local, dt);
 
   if (world.isHost) updateProjectiles(dt);
-  updateHud();
-}
-
-function updateHud() {
-  const mins = Math.floor(world.timer / 60).toString().padStart(2, '0');
-  const secs = Math.floor(world.timer % 60).toString().padStart(2, '0');
-  timerEl.textContent = `${mins}:${secs}`;
 }
 
 function drawArena() {
@@ -638,12 +481,7 @@ function updateFrame(timestamp) {
 
   if (world.phase === 'match') {
     if (!world.roomCode || world.isHost) updateMatch(dt);
-    else {
-      publishNetworkInput(timestamp);
-      updateMatch(dt);
-    }
   }
-  publishNetworkState(timestamp);
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawArena();
