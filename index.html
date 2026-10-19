@@ -31,7 +31,7 @@
           <span class="team-score" id="teamScoreLeft">0</span>
         </div>
         <div class="mid-panel">
-          <span class="mid-label">Chaos Points</span>
+          <span class="mid-label" id="timerLabel">Chaos Points</span>
           <span class="timer" id="timer">03:00</span>
         </div>
         <div class="team-panel" id="teamPanelRight" style="border: 2px solid #5fe7cf;">
@@ -40,7 +40,7 @@
         </div>
       </div>
 
-      <div class="phase-banner" id="phaseBanner">Battle lobby</div>
+      <div class="phase-banner" id="phaseBanner">Battle Lobby</div>
       <div class="enemy-direction" id="enemyDirection" aria-live="polite">NEAREST ENEMY · 424M</div>
 
       <div class="bottom-hud">
@@ -50,45 +50,44 @@
           <span class="health-track"><span id="healthBar"></span></span>
           <span>Lives <strong id="livesValue">3</strong></span>
           <span>Class <strong id="brawlerClassValue">VOLT</strong></span>
-          <span>Tokens +<strong id="matchTokenValue">0</strong></span>
         </div>
       </div>
     </div>
 
-    <!-- Menu Screen -->
-    <section id="menuScreen">
+    <!-- Main Menu Screen -->
+    <section id="menuScreen" class="screen">
       <div class="card">
         <div class="hero">
           <div class="kicker">Chaos is live</div>
           <h1>Blast <span class="accent">Brawl!</span></h1>
-          <p class="lead">Select unique brawler classes with specialized combat abilities, conquer dynamic arenas, and dominate the leaderboard.</p>
+          <p class="lead">Fight through an epic storyline campaign facing colossal bosses, or jump into multi-team brawl arenas!</p>
           <div class="feature-row">
-            <button class="feature-pill" type="button">Unique Brawler Classes</button>
-            <button class="feature-pill" type="button">Smart AI Bots</button>
-            <button class="feature-pill" type="button">Multiplayer Rooms</button>
+            <span class="feature-pill">Story Campaign</span>
+            <span class="feature-pill">Boss Battles</span>
+            <span class="feature-pill">Multiplayer Rooms</span>
           </div>
         </div>
 
         <div class="side-panel home-actions">
-          <button id="openJoin" class="primary" type="button">Join a Game</button>
-          <button id="openHost" class="secondary" type="button">Host a Game</button>
-          <button id="accountButton" class="secondary" type="button">Sign up / Log in</button>
+          <button id="openStory" class="primary" type="button">Story Campaign</button>
+          <button id="openHost" class="secondary" type="button">Host Arcade Game</button>
+          <button id="openJoin" class="secondary" type="button">Join Room</button>
+          <button id="accountButton" class="ghost" type="button">Sign up / Log in</button>
           <div class="menu-footer-btns">
             <button id="homeHelp" class="ghost" type="button">Help</button>
             <button id="homeAbout" class="ghost" type="button">About</button>
           </div>
-          <div id="menuHints">Host a room and pick your brawler class to battle!</div>
         </div>
       </div>
     </section>
 
-    <!-- Host Screen with Visual Brawler Cards & Live Stat Preview -->
-    <section id="hostScreen" class="hidden page-screen">
+    <!-- Host & Brawler Select Screen -->
+    <section id="hostScreen" class="screen hidden">
       <div class="page-panel">
         <header class="result-header">
           <div>
             <div class="kicker">Match Setup</div>
-            <h2>Host a Game</h2>
+            <h2 id="setupTitle">Choose Fighter & Match Settings</h2>
           </div>
           <button class="ghost backHome" type="button">Back</button>
         </header>
@@ -126,30 +125,30 @@
           </label>
         </div>
 
-        <!-- Visual Brawler Selection Grid -->
+        <!-- Brawler Cards Container -->
         <div class="brawler-select-section">
           <div class="kicker">Choose Your Fighter</div>
           <div class="brawler-cards-container">
             <div class="brawler-card active" data-brawler="volt">
-              <canvas class="brawler-preview-canvas" width="100" height="100" id="previewVolt"></canvas>
+              <canvas class="brawler-preview-canvas" width="80" height="80" id="previewVolt"></canvas>
               <div class="brawler-card-title">⚡ VOLT</div>
-              <div class="brawler-card-tag">Speed & Rapid Fire</div>
+              <div class="brawler-card-tag">Speed & Fire Rate</div>
             </div>
 
             <div class="brawler-card" data-brawler="pyre">
-              <canvas class="brawler-preview-canvas" width="100" height="100" id="previewPyre"></canvas>
+              <canvas class="brawler-preview-canvas" width="80" height="80" id="previewPyre"></canvas>
               <div class="brawler-card-title">🔥 PYRE</div>
-              <div class="brawler-card-tag">High Explosive Damage</div>
+              <div class="brawler-card-tag">Explosive Damage</div>
             </div>
 
             <div class="brawler-card" data-brawler="bastion">
-              <canvas class="brawler-preview-canvas" width="100" height="100" id="previewBastion"></canvas>
+              <canvas class="brawler-preview-canvas" width="80" height="80" id="previewBastion"></canvas>
               <div class="brawler-card-title">🛡️ BASTION</div>
-              <div class="brawler-card-tag">Tanky Heavy Shield</div>
+              <div class="brawler-card-tag">Heavy Defense</div>
             </div>
           </div>
 
-          <!-- Brawler Stats Display Box -->
+          <!-- Brawler Live Stats Box -->
           <div class="brawler-stats-box" id="brawlerStatsBox">
             <div class="stats-header">
               <span id="statBrawlerName">⚡ VOLT</span>
@@ -173,4 +172,65 @@
         </div>
 
         <div class="host-actions" style="margin-top: 24px; display: flex; gap: 12px;">
-          <button id="createRoom" class="primary" type="button" style
+          <button id="createRoom" class="primary" type="button" style="flex:1;">Start Match</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Join Screen -->
+    <section id="joinScreen" class="screen hidden">
+      <div class="page-panel narrow-panel">
+        <header class="result-header">
+          <div><div class="kicker">Squad Up</div><h2>Enter Room Code</h2></div>
+          <button class="ghost backHome" type="button">Back</button>
+        </header>
+        <label>Player Name <input id="joinPlayerName" type="text" maxlength="18" value="Rookie" /></label>
+        <label for="joinRoomCode">5-Character Game Code</label>
+        <div class="input-row" style="display: flex; gap: 12px;">
+          <input id="joinRoomCode" type="text" maxlength="5" placeholder="ROOM CODE" style="flex:1;" />
+          <button id="joinButton" class="primary" type="button">Join Lobby</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Account Screen -->
+    <section id="accountScreen" class="screen hidden">
+      <div class="account-panel">
+        <header class="result-header">
+          <div><div class="kicker">Player Profile</div><h2 id="accountTitle">Progression & Rank</h2></div>
+          <button id="closeAccount" class="ghost" type="button">Back</button>
+        </header>
+        <p id="accountStatus" class="account-status">Sign in to save your story campaign progress, unlocked ranks, and tokens.</p>
+        <button id="googleSignIn" class="primary" type="button" style="width:100%; margin-bottom:16px;">Continue with Google</button>
+      </div>
+    </section>
+
+    <!-- Help Screen -->
+    <section id="helpScreen" class="screen hidden">
+      <div class="page-panel narrow-panel">
+        <header class="result-header">
+          <div><div class="kicker">Guide</div><h2>Help & Story</h2></div>
+          <button class="ghost backHome" type="button">Back</button>
+        </header>
+        <p class="lead"><b>WASD</b> to move · <b>Mouse</b> to aim · <b>Click / Space</b> to shoot.<br><br>In <b>Story Mode</b>, clear enemy waves to summon colossal Bosses with unique attacks!</p>
+      </div>
+    </section>
+
+    <!-- About Screen -->
+    <section id="aboutScreen" class="screen hidden">
+      <div class="page-panel narrow-panel">
+        <header class="result-header">
+          <div><div class="kicker">About</div><h2>Blast Brawl!</h2></div>
+          <button class="ghost backHome" type="button">Back</button>
+        </header>
+        <p class="lead">Blast Brawl! features a Story Campaign with colossal Boss fights, distinct brawler classes, and dynamic multi-team arenas.</p>
+      </div>
+    </section>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <script type="module" src="chaos.js"></script>
+</body>
+</html>
