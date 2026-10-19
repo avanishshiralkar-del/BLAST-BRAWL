@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0e1930" />
-  <title>Blast Brawl! Chaos Arena</title>
+  <title>Blast Brawl! Chaos Quest</title>
   <link rel="stylesheet" href="chaos.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,30 +26,22 @@
       </div>
 
       <div class="scoreboard">
-        <div class="team-group" id="teamGroupLeft"></div>
+        <div class="team-panel" id="teamPanelLeft">
+          <span class="team-name" id="teamNameLeft">Coral</span>
+          <span class="team-score" id="teamScoreLeft">0</span>
+        </div>
         <div class="mid-panel">
           <span class="mid-label">Chaos Points</span>
           <span class="timer" id="timer">03:00</span>
         </div>
-        <div class="team-group" id="teamGroupRight"></div>
+        <div class="team-panel" id="teamPanelRight">
+          <span class="team-name" id="teamNameRight">Cyan</span>
+          <span class="team-score" id="teamScoreRight">0</span>
+        </div>
       </div>
 
       <div class="phase-banner" id="phaseBanner">Battle lobby</div>
       <div class="enemy-direction" id="enemyDirection" aria-live="polite">NO ENEMIES</div>
-
-      <div class="match-countdown" id="matchCountdown" aria-live="assertive" hidden>
-        <span class="countdown-caption">GET READY</span>
-        <div class="map-spinner" aria-hidden="true"><span>✦</span></div>
-        <div id="mapSnapshot" class="map-snapshot" aria-hidden="true"></div>
-        <div id="mapCarousel" class="map-carousel" aria-hidden="true"></div>
-        <small class="countdown-map" id="countdownMap">Bouncy Reef</small>
-        <strong id="countdownNumber">3</strong>
-      </div>
-
-      <div class="death-overlay" id="deathOverlay" aria-live="assertive" hidden>
-        <span>YOU DIED</span>
-        <small id="deathMessage">Respawning soon...</small>
-      </div>
 
       <div class="bottom-hud">
         <div class="action-box player-status" aria-live="polite">
@@ -59,7 +51,6 @@
           <span>Lives <strong id="livesValue">3</strong></span>
           <span>Gun <strong id="weaponValue">Pulse</strong></span>
           <span>Shop +<strong id="matchTokenValue">0</strong></span>
-          <span id="spawnShieldStatus" class="spawn-shield-status" hidden></span>
         </div>
       </div>
     </div>
@@ -103,9 +94,9 @@
         </header>
         <div class="host-grid">
           <label>Player Name <input id="playerName" type="text" maxlength="18" value="Rookie" /></label>
-          <label>Bots in Match <select id="botCount"></select></label>
-          <label>Teams <select id="teamCount"></select></label>
-          <label>Bot Difficulty <select id="botDifficulty"></select></label>
+          <label>Bots in Match <select id="botCount"><option value="1">1 Bot</option><option value="3" selected>3 Bots</option><option value="5">5 Bots</option><option value="8">8 Bots</option></select></label>
+          <label>Teams <select id="teamCount"><option value="2" selected>2 Teams</option><option value="3">3 Teams</option><option value="4">4 Teams</option></select></label>
+          <label>Bot Difficulty <select id="botDifficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="nightmare">Nightmare</option></select></label>
           <label>Match Length <select id="matchDuration"><option value="180">3 Minutes</option><option value="300">5 Minutes</option></select></label>
           <label>Lives <select id="matchLives"><option value="3" selected>3 Lives</option><option value="5">5 Lives</option></select></label>
         </div>
@@ -132,6 +123,50 @@
           <input id="joinRoomCode" type="text" maxlength="5" placeholder="CODE" style="flex:1;" />
           <button id="joinButton" class="primary" type="button">Join</button>
         </div>
+      </div>
+    </section>
+
+    <!-- Account & Shop Screen -->
+    <section id="accountScreen" class="hidden page-screen">
+      <div class="account-panel">
+        <div class="result-header">
+          <div>
+            <div class="kicker">PILOT PROFILE & ARMORY</div>
+            <h2 id="accountTitle">Account & Gear Shop</h2>
+          </div>
+          <button id="closeAccount" class="ghost" type="button">Back</button>
+        </div>
+        <p id="accountStatus" class="account-status">Sign in with Google or email to save your brawler progression and unlock rare packs.</p>
+        <button id="googleSignIn" class="primary" type="button" style="width:100%; margin-bottom:16px;">Continue with Google</button>
+        <div id="accountDetails" class="hidden">
+          <div class="account-stats">
+            <span>CAREER XP <strong id="accountXp">0</strong></span>
+            <span>TOKENS <strong id="accountTokens">0</strong> ✦</span>
+          </div>
+          <button id="googleSignOut" class="ghost" type="button" style="margin-top:16px;">Sign Out</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Help Screen -->
+    <section id="helpScreen" class="hidden page-screen">
+      <div class="page-panel narrow-panel">
+        <header class="result-header">
+          <div><div class="kicker">GUIDE</div><h2>Help & Controls</h2></div>
+          <button class="ghost backHome" type="button">Back</button>
+        </header>
+        <p class="lead"><b>WASD</b> to move · <b>Mouse</b> to aim · <b>Click / Space</b> to shoot · Eliminate bots and rivals to earn tokens and rank up on the leaderboard!</p>
+      </div>
+    </section>
+
+    <!-- About Screen -->
+    <section id="aboutScreen" class="hidden page-screen">
+      <div class="page-panel narrow-panel">
+        <header class="result-header">
+          <div><div class="kicker">ABOUT</div><h2>Blast Brawl!</h2></div>
+          <button class="ghost backHome" type="button">Back</button>
+        </header>
+        <p class="lead">Blast Brawl! is an action-packed arcade brawler featuring multi-team combat, tactical arenas, and smooth netcode.</p>
       </div>
     </section>
 
