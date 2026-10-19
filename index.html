@@ -5,132 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0e1930" />
   <title>Blast Brawl! Chaos Arena</title>
+  <link rel="stylesheet" href="chaos.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg-1: #0e1930;
-      --bg-2: #172d46;
-      --panel: rgba(18, 28, 45, 0.88);
-      --panel-border: rgba(255, 255, 255, 0.12);
-      --text: #edf7ff;
-      --muted: #9fb8cc;
-      --teal: #5fe7cf;
-      --orange: #ff8a67;
-      --yellow: #ffd76d;
-      --pink: #ff77b9;
-      --lime: #bbff7d;
-      --danger: #ff5f7d;
-      --radius: 24px;
-    }
-
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      height: 100%;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at 50% 30%, var(--bg-2) 0%, var(--bg-1) 100%);
-      color: var(--text);
-      overflow: hidden;
-    }
-
-    button, input, select { font: inherit; cursor: pointer; }
-    #app { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
-    #gameCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-
-    /* HUD Topbar */
-    #hud { position: absolute; inset: 0; pointer-events: none; }
-    .topbar { position: absolute; top: 22px; left: 24px; right: 24px; display: flex; align-items: center; justify-content: space-between; z-index: 5; }
-    .hamburger { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid var(--panel-border); border-radius: 14px; color: var(--text); background: rgba(11, 18, 30, 0.75); pointer-events: auto; }
-    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.9rem; background: rgba(11, 18, 30, 0.75); padding: 8px 18px; border-radius: 999px; border: 1px solid var(--panel-border); }
-    .brand-badge { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: linear-gradient(135deg, var(--orange), var(--pink)); color: #000; font-size: 0.8rem; }
-    .room-chip { background: rgba(11, 18, 30, 0.75); border: 1px solid var(--panel-border); color: var(--muted); padding: 12px 20px; border-radius: 999px; font-size: 0.75rem; letter-spacing: 0.08em; }
-
-    /* Scoreboard */
-    .scoreboard { position: absolute; top: 26px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; z-index: 5; pointer-events: auto; }
-    .team-panel { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(11, 18, 30, 0.8); border: 1px solid var(--panel-border); border-radius: 14px; }
-    .team-name { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
-    .team-score { font-size: 1.4rem; font-weight: 900; }
-    .mid-panel { background: rgba(11, 18, 30, 0.85); border: 1px solid var(--panel-border); padding: 6px 20px; border-radius: 16px; text-align: center; }
-    .mid-label { display: block; font-size: 0.6rem; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
-    .timer { font-size: 1.5rem; font-weight: 900; letter-spacing: 0.05em; }
-
-    /* Phase Banners & Overlays */
-    .phase-banner { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); z-index: 5; background: rgba(11, 18, 30, 0.8); border: 1px solid var(--panel-border); border-radius: 999px; padding: 6px 16px; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-    .enemy-direction { position: absolute; top: 132px; left: 50%; transform: translateX(-50%); z-index: 5; font-size: 0.65rem; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; background: rgba(11, 18, 30, 0.6); padding: 4px 12px; border-radius: 999px; }
-
-    /* Bottom HUD */
-    .bottom-hud { position: absolute; left: 24px; right: 24px; bottom: 24px; z-index: 5; display: flex; justify-content: space-between; pointer-events: auto; }
-    .action-box { background: rgba(11, 18, 30, 0.82); border: 1px solid var(--panel-border); border-radius: 16px; padding: 12px 18px; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; gap: 16px; text-transform: uppercase; }
-    .health-track { width: 100px; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; display: inline-block; vertical-align: middle; }
-    .health-track span { display: block; width: 100%; height: 100%; background: linear-gradient(90deg, var(--danger), var(--lime)); border-radius: inherit; transition: width 0.2s ease; }
-
-    /* Screens & Modals */
-    #menuScreen, #lobbyScreen, #resultScreen, #pauseScreen, #hostScreen, #joinScreen, #helpScreen, #aboutScreen, #accountScreen, #mapEditorScreen, #winnerIntro {
-      position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 32px; background: rgba(8, 13, 22, 0.7); backdrop-filter: blur(12px); overflow-y: auto;
-    }
-    .hidden { display: none !important; }
-
-    /* Main Menu Card Layout */
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: var(--radius);
-      padding: 48px;
-      max-width: 980px;
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1.2fr 0.85fr;
-      gap: 40px;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-      align-items: center;
-    }
-
-    .hero { display: flex; flex-direction: column; }
-    .hero .kicker { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
-    .hero h1 { font-size: 3.5rem; font-weight: 900; line-height: 0.95; margin: 0 0 16px 0; letter-spacing: -0.02em; text-transform: uppercase; }
-    .hero h1 .accent { color: var(--orange); display: inline-block; margin-left: 8px; }
-    .hero .lead { font-size: 0.95rem; line-height: 1.5; color: var(--muted); margin: 0 0 24px 0; }
-
-    .feature-row { display: flex; flex-wrap: wrap; gap: 8px; }
-    .feature-pill { font-size: 0.7rem; font-weight: 700; background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); padding: 8px 14px; border-radius: 999px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
-
-    .side-panel.home-actions { display: flex; flex-direction: column; gap: 12px; width: 100%; }
-    .side-panel button { width: 100%; text-align: center; justify-content: center; }
-
-    button.primary { background: var(--lime); color: #0a131f; font-weight: 800; border-radius: 16px; padding: 18px 24px; border: none; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; box-shadow: 0 8px 25px rgba(187,255,125,0.25); }
-    button.primary:hover { transform: translateY(-2px); filter: brightness(1.05); }
-
-    button.secondary { background: var(--teal); color: #0a131f; font-weight: 800; border-radius: 16px; padding: 18px 24px; border: none; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; box-shadow: 0 8px 25px rgba(95,231,207,0.2); }
-    button.secondary:hover { transform: translateY(-2px); filter: brightness(1.05); }
-
-    button.ghost { background: rgba(255,255,255,0.05); color: var(--text); font-weight: 700; border-radius: 16px; padding: 16px 24px; border: 1px solid var(--panel-border); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; }
-    button.ghost:hover { background: rgba(255,255,255,0.1); }
-
-    .menu-footer-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    #menuHints { font-size: 0.68rem; color: var(--muted); text-align: center; margin-top: 8px; line-height: 1.4; }
-
-    .page-panel, .lobby-panel, .end-panel, .settings-panel, .editor-panel, .account-panel {
-      background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 36px; max-width: 820px; width: 100%; box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-    }
-    .narrow-panel { max-width: 540px; }
-
-    input, select {
-      width: 100%; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.04); color: var(--text); border-radius: 14px; padding: 14px 18px; font-size: 0.95rem; outline: none; transition: 0.2s;
-    }
-    input:focus, select:focus { border-color: var(--teal); background: rgba(255,255,255,0.07); }
-    label { display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
-
-    .result-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
-    .result-header h2 { font-size: 1.8rem; font-weight: 900; margin: 4px 0 0 0; text-transform: uppercase; }
-    .result-header .kicker { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; }
-
-    .toast {
-      position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(30px); opacity: 0; z-index: 30; background: rgba(11, 18, 30, 0.92); border: 1px solid var(--panel-border); padding: 14px 24px; border-radius: 999px; font-size: 0.85rem; font-weight: 700; transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none; box-shadow: 0 15px 30px rgba(0,0,0,0.5);
-    }
-    .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
-  </style>
 </head>
 <body>
   <div id="app">
@@ -218,4 +96,49 @@
       <div class="page-panel">
         <header class="result-header">
           <div>
-            <div class="k
+            <div class="kicker">MULTIPARTY SETUP</div>
+            <h2>Host a Match</h2>
+          </div>
+          <button class="ghost backHome" type="button">Back</button>
+        </header>
+        <div class="host-grid">
+          <label>Player Name <input id="playerName" type="text" maxlength="18" value="Rookie" /></label>
+          <label>Bots in Match <select id="botCount"></select></label>
+          <label>Teams <select id="teamCount"></select></label>
+          <label>Bot Difficulty <select id="botDifficulty"></select></label>
+          <label>Match Length <select id="matchDuration"><option value="180">3 Minutes</option><option value="300">5 Minutes</option></select></label>
+          <label>Lives <select id="matchLives"><option value="3" selected>3 Lives</option><option value="5">5 Lives</option></select></label>
+        </div>
+        <div class="host-actions" style="margin-top: 24px; display: flex; gap: 12px;">
+          <button id="createRoom" class="primary" type="button" style="flex:1;">Create Lobby</button>
+        </div>
+        <select id="mapSelect" hidden></select>
+      </div>
+    </section>
+
+    <!-- Join Screen -->
+    <section id="joinScreen" class="hidden page-screen">
+      <div class="page-panel narrow-panel">
+        <header class="result-header">
+          <div>
+            <div class="kicker">SQUAD UP</div>
+            <h2>Join Room</h2>
+          </div>
+          <button class="ghost backHome" type="button">Back</button>
+        </header>
+        <label>Player Name <input id="joinPlayerName" type="text" maxlength="18" value="Rookie" /></label>
+        <label for="joinRoomCode">5-Character Room Code</label>
+        <div class="input-row" style="display: flex; gap: 12px;">
+          <input id="joinRoomCode" type="text" maxlength="5" placeholder="CODE" style="flex:1;" />
+          <button id="joinButton" class="primary" type="button">Join</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <script type="module" src="chaos.js"></script>
+</body>
+</html>
