@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0a0f1d" />
-  <title>Blast Brawl! Chaos Quest</title>
+  <meta name="theme-color" content="#0e1930" />
+  <title>Blast Brawl! Chaos Arena</title>
   <link rel="stylesheet" href="chaos.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <div id="app">
@@ -17,18 +17,18 @@
     <!-- In-Game HUD -->
     <div id="hud" style="display: none;">
       <div class="topbar">
-        <button id="gameMenuButton" class="icon-btn" type="button" aria-label="Open game menu">☰</button>
-        <div class="brand-pill">
+        <button id="gameMenuButton" class="hamburger" type="button" aria-label="Open game menu">☰</button>
+        <div class="brand">
           <span class="brand-badge">⚡</span>
           <span>Blast Brawl!</span>
         </div>
-        <div class="room-pill">Room <strong id="roomCode">--</strong></div>
+        <div class="room-chip">Room <strong id="roomCode">--</strong></div>
       </div>
 
       <div class="scoreboard">
         <div class="team-group" id="teamGroupLeft"></div>
         <div class="mid-panel">
-          <span class="mid-label">CHAOS POINTS</span>
+          <span class="mid-label">Chaos Points</span>
           <span class="timer" id="timer">03:00</span>
         </div>
         <div class="team-group" id="teamGroupRight"></div>
@@ -47,18 +47,18 @@
       </div>
 
       <div class="death-overlay" id="deathOverlay" aria-live="assertive" hidden>
-        <span class="death-title">YOU DIED</span>
+        <span>YOU DIED</span>
         <small id="deathMessage">Respawning soon...</small>
       </div>
 
       <div class="bottom-hud">
         <div class="action-box player-status" aria-live="polite">
-          <div class="stat-item">HP <strong id="healthValue">100</strong></div>
-          <div class="stat-item">KOs <strong id="koValue">0</strong></div>
-          <div class="health-track"><span id="healthBar"></span></div>
-          <div class="stat-item">Lives <strong id="livesValue">3</strong></div>
-          <div class="stat-item">Gun <strong id="weaponValue">Pulse</strong></div>
-          <div class="stat-item">Shop +<strong id="matchTokenValue">0</strong></div>
+          <span>HP <strong id="healthValue">100</strong></span>
+          <span>KOs <strong id="koValue">0</strong></span>
+          <span class="health-track"><span id="healthBar"></span></span>
+          <span>Lives <strong id="livesValue">3</strong></span>
+          <span>Gun <strong id="weaponValue">Pulse</strong></span>
+          <span>Shop +<strong id="matchTokenValue">0</strong></span>
           <span id="spawnShieldStatus" class="spawn-shield-status" hidden></span>
         </div>
       </div>
@@ -69,49 +69,48 @@
           <span id="joystickKnob" class="joystick-knob" aria-hidden="true"></span>
         </div>
         <div class="touch-actions">
-          <button type="button" class="touch-btn" data-touch="shoot">FIRE</button>
-          <button type="button" class="touch-btn" data-touch="dash">DASH</button>
+          <button type="button" data-touch="shoot">Fire</button>
+          <button type="button" data-touch="dash">Dash</button>
+          <button type="button" data-touch="use">Shield</button>
         </div>
       </div>
     </div>
 
     <!-- Menu Screen -->
-    <section id="menuScreen" class="screen">
-      <div class="glass-card hero-layout">
-        <div class="hero-content">
-          <div class="badge-kicker">⚡ ARCADE BRAWLER & CHAOS QUEST</div>
-          <h1 class="hero-title">BLAST <span class="gradient-text">BRAWL!</span></h1>
-          <p class="hero-lead">Enter high-octane multi-team battles, build custom maps, survive arena disasters, and unlock legendary skins.</p>
-          <div class="feature-pills">
-            <span class="pill">🔥 Multiplayer Rooms</span>
-            <span class="pill">🤖 Smart AI Bots</span>
-            <span class="pill">🛒 Gear Shop</span>
+    <section id="menuScreen">
+      <div class="card">
+        <div class="hero">
+          <div class="kicker">⚡ ARCADE BRAWLER & CHAOS QUEST</div>
+          <h1>Blast <span class="accent">Brawl!</span></h1>
+          <p class="lead">Enter high-octane multi-team arenas, unlock powerful brawlers from armory packs, and conquer unique tactical hazards.</p>
+          <div class="feature-row">
+            <span class="feature-pill">🔥 Multiplayer Rooms</span>
+            <span class="feature-pill">🤖 Smart AI Bots</span>
+            <span class="feature-pill" id="selectedMapFeature">Strategic Maps</span>
           </div>
         </div>
 
-        <div class="menu-actions">
-          <button id="openJoin" class="btn btn-primary btn-lg" type="button">Join Game</button>
-          <button id="openHost" class="btn btn-secondary btn-lg" type="button">Host Room</button>
-          <button id="accountButton" class="btn btn-accent btn-lg" type="button">Account & Shop</button>
-          <div class="menu-footer-btns">
-            <button id="homeHelp" class="btn btn-ghost" type="button">How to Play</button>
-            <button id="homeAbout" class="btn btn-ghost" type="button">About</button>
-          </div>
+        <div class="side-panel home-actions">
+          <button id="openJoin" class="primary" type="button">Join Game</button>
+          <button id="openHost" class="secondary" type="button">Host Room</button>
+          <button id="accountButton" class="secondary" type="button">Account & Armory Shop</button>
+          <button id="homeHelp" class="ghost" type="button">How to Play</button>
+          <button id="homeAbout" class="ghost" type="button">About</button>
         </div>
       </div>
     </section>
 
     <!-- Host Screen -->
-    <section id="hostScreen" class="screen hidden">
-      <div class="glass-panel">
-        <header class="panel-header">
+    <section id="hostScreen" class="hidden page-screen">
+      <div class="page-panel">
+        <header class="result-header">
           <div>
-            <span class="badge-kicker">MULTIPARTY SETUP</span>
+            <div class="kicker">MULTIPARTY SETUP</div>
             <h2>Host a Match</h2>
           </div>
-          <button class="btn btn-ghost backHome" type="button">Back</button>
+          <button class="ghost backHome" type="button">Back</button>
         </header>
-        <div class="form-grid">
+        <div class="host-grid">
           <label>Player Name <input id="playerName" type="text" maxlength="18" value="Rookie" autocomplete="nickname" /></label>
           <label>Bots in Match <select id="botCount" aria-label="Number of bots"></select></label>
           <label>Teams <select id="teamCount" aria-label="Number of teams"></select></label>
@@ -119,251 +118,295 @@
           <label>Match Length <select id="matchDuration"><option value="180">3 Minutes</option><option value="300">5 Minutes</option><option value="600">10 Minutes</option></select></label>
           <label>Lives per Player <select id="matchLives"><option value="1">1 Life</option><option value="3" selected>3 Lives</option><option value="5">5 Lives</option></select></label>
         </div>
-        <p id="botDifficultyDescription" class="helper-text"></p>
-        <div class="panel-footer">
-          <button id="customizeMapButton" class="btn btn-secondary" type="button">Build Custom Map</button>
-          <button id="createRoom" class="btn btn-primary" type="button">Create Lobby</button>
+        <p id="botDifficultyDescription" class="map-description"></p>
+        <div class="host-actions">
+          <button id="customizeMapButton" class="ghost" type="button">Build Custom Map</button>
+          <button id="createRoom" class="primary" type="button">Create Lobby</button>
         </div>
-        <select id="mapSelect" hidden></select>
+        <select id="mapSelect" aria-label="Map selection" hidden></select>
         <span id="mapDescription" hidden></span>
       </div>
     </section>
 
     <!-- Join Screen -->
-    <section id="joinScreen" class="screen hidden">
-      <div class="glass-panel panel-sm">
-        <header class="panel-header">
+    <section id="joinScreen" class="hidden page-screen">
+      <div class="page-panel narrow-panel">
+        <header class="result-header">
           <div>
-            <span class="badge-kicker">SQUAD UP</span>
+            <div class="kicker">SQUAD UP</div>
             <h2>Join Room</h2>
           </div>
-          <button class="btn btn-ghost backHome" type="button">Back</button>
+          <button class="ghost backHome" type="button">Back</button>
         </header>
-        <div class="form-stack">
-          <label>Player Name <input id="joinPlayerName" type="text" maxlength="18" value="Rookie" autocomplete="nickname" /></label>
-          <label for="joinRoomCode">5-Character Room Code</label>
-          <div class="input-action-row">
-            <input id="joinRoomCode" type="text" maxlength="5" placeholder="CODE" />
-            <button id="joinButton" class="btn btn-primary" type="button">Join</button>
-          </div>
+        <label>Player Name <input id="joinPlayerName" type="text" maxlength="18" value="Rookie" autocomplete="nickname" /></label>
+        <label for="joinRoomCode">5-Character Room Code</label>
+        <div class="input-row">
+          <input id="joinRoomCode" type="text" maxlength="5" placeholder="CODE" aria-label="Room code" />
+          <button id="joinButton" class="primary" type="button">Join</button>
         </div>
+        <p class="map-description">Enter the host's 5-character Firebase room code to join their lobby.</p>
       </div>
     </section>
 
     <!-- Account & Shop Screen -->
-    <section id="accountScreen" class="screen hidden">
-      <div class="glass-panel panel-lg">
-        <header class="panel-header">
+    <section id="accountScreen" class="hidden">
+      <div class="account-panel">
+        <div class="result-header">
           <div>
-            <span class="badge-kicker">PILOT PROFILE</span>
+            <div class="kicker">PILOT PROFILE & ARMORY</div>
             <h2 id="accountTitle">Account & Gear Shop</h2>
           </div>
-          <button id="closeAccount" class="btn btn-ghost" type="button">Back</button>
-        </header>
-
-        <p id="accountStatus" class="status-banner" role="status" aria-live="polite">Checking account status...</p>
+          <button id="closeAccount" class="ghost" type="button">Back</button>
+        </div>
         
-        <div id="authActions" class="auth-section">
-          <button id="googleSignIn" class="btn btn-primary" type="button">Sign in with Google</button>
-          <div class="email-auth-box">
-            <p class="divider-text">Or use email</p>
-            <div class="form-grid-sm">
-              <input id="emailAddress" type="email" placeholder="Email address" autocomplete="email" />
-              <input id="emailPassword" type="password" placeholder="Password (min 6 chars)" autocomplete="current-password" />
-            </div>
-            <div class="row-btns">
-              <button id="emailSignIn" class="btn btn-secondary" type="button">Sign In</button>
-              <button id="emailSignUp" class="btn btn-ghost" type="button">Create Account</button>
-            </div>
+        <p id="accountStatus" class="account-status" role="status" aria-live="polite">Checking account status...</p>
+        
+        <button id="googleSignIn" class="primary" type="button">Sign in with Google</button>
+        <div id="emailAuthForm" class="email-auth-form">
+          <p class="auth-divider">Or use email</p>
+          <label for="emailAddress">Email address</label>
+          <input id="emailAddress" type="email" autocomplete="email" required maxlength="254" />
+          <label for="emailPassword">Password</label>
+          <input id="emailPassword" type="password" autocomplete="current-password" required minlength="6" />
+          <div class="input-row">
+            <button id="emailSignIn" class="secondary" type="button">Sign In</button>
+            <button id="emailSignUp" class="ghost" type="button">Create Account</button>
           </div>
         </div>
 
         <div id="accountDetails" class="hidden">
-          <div class="stats-overview">
-            <div class="stat-card"><span>PLAYER ID</span><strong id="accountUid">--</strong></div>
-            <div class="stat-card"><span>CAREER XP</span><strong id="accountXp">0</strong></div>
-            <div class="stat-card"><span>TOKENS</span><strong id="accountTokens">0</strong> ✦</div>
+          <div class="account-stats">
+            <span>PLAYER ID<strong id="accountUid">--</strong></span>
+            <span>CAREER XP<strong id="accountXp">0</strong></span>
+            <span>UNLOCKED<strong id="accountSkins">Rookie</strong></span>
+            <span>TOKENS<strong id="accountTokens">0</strong> ✦</span>
           </div>
 
-          <div class="shop-container">
-            <div class="shop-header">
-              <h3>Arena Armory</h3>
-              <span class="wallet-badge">✦ <strong id="shopTokenBalance">0</strong> Tokens</span>
+          <section class="shop-section">
+            <div class="shop-heading">
+              <div>
+                <h3>Brawler & Armory Shop</h3>
+                <p id="tokenAllowance">Earn 10 tokens per KO · 100 max per day.</p>
+                <p class="shop-note">Guests use the default Rookie brawler. Sign in to open packs and unlock rare brawlers with better HP, speed, and damage!</p>
+              </div>
+              <span class="shop-wallet">✦ <strong id="shopTokenBalance">0</strong> Tokens</span>
             </div>
-            <p id="tokenAllowance" class="helper-text">Earn 10 tokens per KO · 100 max per day.</p>
             
-            <h4>Skins</h4>
-            <div id="skinShop" class="shop-grid"></div>
-            
-            <h4>Blasters</h4>
-            <div id="gunShop" class="shop-grid"></div>
-
-            <div class="equipment-selectors">
-              <label>Equipped Gun <select id="equippedGun"></select></label>
-              <label>Equipped Skin <select id="equippedSkin"></select></label>
+            <div class="shop-category">
+              <h4>Brawler Skins</h4>
+              <div id="skinShop" class="shop-grid"></div>
             </div>
-          </div>
+            
+            <div class="shop-category">
+              <h4>Blasters</h4>
+              <div id="gunShop" class="shop-grid"></div>
+            </div>
+          </section>
 
-          <div class="leaderboard-box">
-            <h3>Global XP Leaderboard</h3>
-            <ol id="globalLeaderboard" class="leaderboard-list"><li>Sign in to view rankings.</li></ol>
-          </div>
+          <label for="equippedGun">Equipped Gun</label>
+          <select id="equippedGun"></select>
+          <label for="equippedSkin">Equipped Brawler</label>
+          <select id="equippedSkin"></select>
 
-          <button id="googleSignOut" class="btn btn-ghost mt-4" type="button">Sign Out</button>
+          <label for="friendUid">Add Friend by ID</label>
+          <div class="input-row">
+            <input id="friendUid" type="text" maxlength="128" placeholder="Friend Player ID" />
+            <button id="sendFriendRequest" class="secondary" type="button">Send Request</button>
+          </div>
+          <h3>Friend Requests</h3>
+          <div class="friend-list" id="friendRequests"></div>
+          
+          <button id="googleSignOut" class="ghost mt-4" type="button">Sign Out</button>
         </div>
+
+        <h3>Global XP Leaderboard</h3>
+        <ol id="globalLeaderboard" class="global-leaderboard"><li>Sign in to view rankings.</li></ol>
       </div>
     </section>
 
     <!-- Lobby Screen -->
-    <section id="lobbyScreen" class="screen hidden">
-      <div class="glass-panel">
-        <header class="panel-header">
+    <section id="lobbyScreen" class="hidden">
+      <div class="lobby-panel">
+        <div class="lobby-header">
           <div>
-            <span class="badge-kicker">BATTLE LOBBY</span>
-            <h2>Room Code: <span id="lobbyCodeText" class="gradient-text">--</span></h2>
+            <div class="kicker">BATTLE LOBBY</div>
+            <div class="lobby-code" id="lobbyCodeText">--</div>
           </div>
-          <button id="copyRoom" class="btn btn-secondary" type="button">Copy Code</button>
-        </header>
+          <div class="lobby-header-actions">
+            <button id="lobbyHamburger" class="hamburger" type="button" aria-label="Open lobby menu">☰</button>
+            <button id="copyRoom" class="ghost" type="button">Copy Code</button>
+          </div>
+        </div>
 
         <div class="player-list" id="playerList"></div>
 
-        <div class="minigame-banner">
-          <div><strong>Warmup Minigame: Star Catch</strong><p>Tap the star before it moves to pass the time!</p></div>
-          <button id="minigameTarget" class="star-target" type="button" aria-label="Catch star">✦</button>
+        <div class="lobby-minigame">
+          <div>
+            <strong>Warmup Minigame: Star Catch</strong>
+            <span>Tap the star before it moves!</span>
+          </div>
+          <button id="minigameTarget" type="button" aria-label="Catch star">✦</button>
           <span>Score: <strong id="minigameScore">0</strong></span>
         </div>
 
-        <div class="panel-footer">
-          <button id="startMatch" class="btn btn-primary" type="button">Start Match</button>
-          <button id="leaveLobby" class="btn btn-ghost" type="button">Leave Lobby</button>
+        <div class="lobby-actions">
+          <button id="startMatch" class="primary" type="button">Start Match</button>
+          <button id="leaveLobby" class="ghost" type="button">Leave Lobby</button>
         </div>
       </div>
     </section>
 
     <!-- Result Screen -->
-    <section id="resultScreen" class="screen hidden">
-      <div class="glass-panel">
-        <header class="panel-header">
+    <section id="resultScreen" class="hidden">
+      <div class="end-panel">
+        <div class="result-header">
           <div>
-            <span class="badge-kicker">MATCH CONCLUDED</span>
+            <div class="kicker">MATCH CONCLUDED</div>
             <h2 id="scoreMessage">Chaos Champion</h2>
+            <p id="mvpMessage" class="map-description"></p>
           </div>
-          <p id="mvpMessage" class="helper-text"></p>
-        </header>
+        </div>
 
-        <div id="resultList" class="result-podium"></div>
-
-        <div class="table-container">
+        <div id="resultList" class="result-board"></div>
+        
+        <h3>Full Match Leaderboard</h3>
+        <div class="match-leaderboard-wrap">
           <table class="match-leaderboard">
-            <thead><tr><th>Place</th><th>Pilot</th><th>Team</th><th>KOs</th><th>Score</th></tr></thead>
+            <thead>
+              <tr><th>Place</th><th>Pilot</th><th>Team</th><th>KOs</th><th>Score</th></tr>
+            </thead>
             <tbody id="matchLeaderboard"></tbody>
           </table>
         </div>
 
-        <p id="xpRewardMessage" class="status-banner"></p>
-        <button id="postMatchAccount" class="btn btn-accent hidden" type="button">Sign In to Save XP & Tokens</button>
+        <p id="xpRewardMessage" class="xp-reward-message"></p>
+        <button id="postMatchAccount" class="secondary hidden" type="button">Sign In to Save XP & Earn Tokens</button>
 
-        <div class="panel-footer">
-          <button id="playAgain" class="btn btn-primary" type="button">Play Again</button>
-          <button id="backToMenu" class="btn btn-ghost" type="button">Main Menu</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Map Editor Screen -->
-    <section id="mapEditorScreen" class="screen hidden">
-      <div class="glass-panel panel-lg">
-        <header class="panel-header">
-          <div>
-            <span class="badge-kicker">WORKSHOP</span>
-            <h2>Custom Arena Builder</h2>
-          </div>
-        </header>
-        <div class="editor-toolbar">
-          <label>Map Name <input id="customMapName" maxlength="24" value="My Wild Arena" /></label>
-          <label>Theme <select id="customMapTheme"></select></label>
-          <label>Brush <select id="mapBrush"><option value="wall">Crystal Wall</option><option value="hazard">Hazard Zone</option><option value="boost">Speed Pad</option><option value="clear">Erase</option></select></label>
-        </div>
-        <div class="canvas-wrapper">
-          <canvas id="mapEditorCanvas" width="720" height="440" aria-label="Map editor grid"></canvas>
-        </div>
-        <div class="panel-footer">
-          <button id="saveCustomMap" class="btn btn-primary" type="button">Save Map</button>
-          <button id="clearCustomMap" class="btn btn-secondary" type="button">Clear Board</button>
-          <button id="cancelMapEditor" class="btn btn-ghost" type="button">Back</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Help Screen -->
-    <section id="helpScreen" class="screen hidden">
-      <div class="glass-panel">
-        <header class="panel-header">
-          <div>
-            <span class="badge-kicker">FIELD GUIDE</span>
-            <h2>Help & Controls</h2>
-          </div>
-          <button class="btn btn-ghost backHome" type="button">Back</button>
-        </header>
-        <div class="help-grid">
-          <div class="help-card"><h3>Movement & Combat</h3><p><b>WASD / Joysticks</b> to move<br><b>Mouse / Aim</b> to direct attacks<br><b>Click / Space</b> to fire blaster<br><b>Shift / Dash</b> for quick evasion</p></div>
-          <div class="help-card"><h3>Hazards & Events</h3><p>Watch out for roaming saws, lava vents, and periodic natural disasters sweeping across the map!</p></div>
-          <div class="help-card"><h3>Progression</h3><p>Sign in with Google to save your profile, earn tokens from KOs, and unlock powerful weapons and skins.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- About Screen -->
-    <section id="aboutScreen" class="screen hidden">
-      <div class="glass-panel panel-sm">
-        <header class="panel-header">
-          <div>
-            <span class="badge-kicker">ABOUT</span>
-            <h2>Blast Brawl!</h2>
-          </div>
-          <button class="btn btn-ghost backHome" type="button">Back</button>
-        </header>
-        <p class="hero-lead">Blast Brawl!: Chaos Quest is an arcade brawler featuring multiplayer room hosting, custom map creation, smart difficulty-based bots, and dynamic environmental chaos.</p>
-      </div>
-    </section>
-
-    <!-- Pause Screen -->
-    <section id="pauseScreen" class="screen hidden">
-      <div class="glass-panel panel-sm">
-        <header class="panel-header"><h2>Match Paused</h2></header>
-        <div class="form-stack">
-          <label>Volume <input id="volume" type="range" min="0" max="1" step="0.05" value="0.8" /></label>
-          <label>Mouse Sensitivity <input id="sensitivity" type="range" min="0.5" max="2" step="0.1" value="1" /></label>
-        </div>
-        <div class="panel-footer">
-          <button id="resumeMatch" class="btn btn-primary" type="button">Resume</button>
-          <button id="leaveGame" class="btn btn-ghost" type="button">Leave Match</button>
+        <div class="result-actions">
+          <button id="playAgain" class="primary" type="button">Play Again</button>
+          <button id="backToMenu" class="ghost" type="button">Main Menu</button>
         </div>
       </div>
     </section>
 
     <!-- Winner Highlights Intro -->
-    <section id="winnerIntro" class="screen hidden" aria-live="assertive">
-      <div class="glass-panel panel-lg">
-        <div class="badge-kicker" id="winnerIntroKicker">MATCH HIGHLIGHTS</div>
-        <h1 id="winnerIntroTitle" class="gradient-text">TEAM WINS!</h1>
+    <section id="winnerIntro" class="winner-intro hidden" aria-live="assertive">
+      <div class="winner-intro-panel">
+        <div class="kicker" id="winnerIntroKicker">MATCH HIGHLIGHTS</div>
+        <h1 id="winnerIntroTitle">TEAM WINS!</h1>
         <p id="winnerIntroCaption">Reliving the biggest plays...</p>
-        <div class="canvas-wrapper">
-          <canvas id="winnerReplayCanvas" width="900" height="520" aria-label="Replay canvas"></canvas>
-        </div>
-        <div class="panel-footer">
+        <canvas id="winnerReplayCanvas" width="900" height="520" aria-label="Replay canvas"></canvas>
+        <div class="winner-intro-footer">
           <span id="winnerIntroProgress">Highlight 1</span>
-          <button id="skipWinnerIntro" class="btn btn-secondary" type="button">Skip Highlights</button>
+          <button id="skipWinnerIntro" class="secondary" type="button">Skip Highlights</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Map Editor Screen -->
+    <section id="mapEditorScreen" class="hidden">
+      <div class="editor-panel">
+        <div class="result-header">
+          <div>
+            <div class="kicker">WORKSHOP</div>
+            <h2>Custom Arena Builder</h2>
+          </div>
+        </div>
+        <div class="editor-settings">
+          <label>Map Name <input id="customMapName" maxlength="24" value="My Wild Arena" /></label>
+          <label>Theme <select id="customMapTheme"></select></label>
+          <label>Brush <select id="mapBrush">
+            <option value="wall">Crystal Wall</option>
+            <option value="hazard">Hazard Zone</option>
+            <option value="boost">Speed Pad</option>
+            <option value="clear">Erase</option>
+          </select></label>
+        </div>
+        <p class="editor-help">Click tiles to build. Keep the center lanes open for fluid brawls.</p>
+        <canvas id="mapEditorCanvas" width="720" height="440" aria-label="Map editor grid"></canvas>
+        <div class="editor-actions">
+          <button id="saveCustomMap" class="primary" type="button">Save Map</button>
+          <button id="clearCustomMap" class="secondary" type="button">Clear Board</button>
+          <button id="cancelMapEditor" class="ghost" type="button">Back</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Help Screen -->
+    <section id="helpScreen" class="hidden page-screen">
+      <div class="page-panel help-panel">
+        <header class="result-header">
+          <div>
+            <div class="kicker">FIELD GUIDE</div>
+            <h2>Help & Controls</h2>
+          </div>
+          <button class="ghost backHome" type="button">Back</button>
+        </header>
+        <div class="help-grid">
+          <article>
+            <h3>Movement & Combat</h3>
+            <p><b>WASD / Joysticks</b> to move<br><b>Mouse / Aim</b> to direct attacks<br><b>Click / Space</b> to fire blaster<br><b>Shift</b> to dash<br><b>E</b> for shield</p>
+          </article>
+          <article>
+            <h3>Unique Arenas</h3>
+            <p><b>Bouncy Reef:</b> Slow Tidal Pools.<br><b>Neon Skyline:</b> Fast Boost Pads.<br><b>Ember Foundry:</b> Erupting Lava Vents.<br><b>Frostbite Circuit:</b> Slippery Black Ice.<br><b>Overgrown Temple:</b> Venom Groves.</p>
+          </article>
+          <article>
+            <h3>Brawler Tiers & Armory</h3>
+            <p>Guests play with the default Rookie brawler. Sign in to earn tokens from KOs and unlock rarer brawlers with higher max HP, speed, and damage multipliers!</p>
+          </article>
+          <article>
+            <h3>Multiplayer Rooms</h3>
+            <p>Host a match, copy the 5-character room code, and share it with friends to battle together in real-time.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Screen -->
+    <section id="aboutScreen" class="hidden page-screen">
+      <div class="page-panel narrow-panel">
+        <header class="result-header">
+          <div>
+            <div class="kicker">ABOUT</div>
+            <h2>Blast Brawl!</h2>
+          </div>
+          <button class="ghost backHome" type="button">Back</button>
+        </header>
+        <p class="lead">Blast Brawl! is an action-packed arcade brawler featuring multiplayer room hosting, custom map building, smart AI bots, and dynamic environmental hazards.</p>
+      </div>
+    </section>
+
+    <!-- Pause Screen -->
+    <section id="pauseScreen" class="hidden">
+      <div class="settings-panel" id="settingsPanel">
+        <div class="result-header">
+          <div>
+            <div class="kicker">SETTINGS</div>
+            <h2>Match Options</h2>
+          </div>
+        </div>
+        <div class="setting-row">
+          <label for="volume">Volume</label>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="0.8" />
+        </div>
+        <div class="setting-row">
+          <label for="sensitivity">Mouse Sensitivity</label>
+          <input id="sensitivity" type="range" min="0.5" max="2" step="0.1" value="1" />
+        </div>
+        <div class="settings-actions">
+          <button id="resumeMatch" class="primary" type="button">Resume</button>
+          <button id="leaveGame" class="ghost" type="button">Leave Match</button>
         </div>
       </div>
     </section>
 
     <!-- In-Game Slide-out Menu -->
     <div id="gameMenu" class="game-menu hidden">
-      <button id="matchHelp" class="btn btn-secondary" type="button">Help & Controls</button>
-      <button id="hostPause" class="btn btn-secondary hidden" type="button">Pause Match</button>
-      <button id="menuLeave" class="btn btn-ghost" type="button">Leave Match</button>
-      <button id="menuClose" class="btn btn-ghost" type="button">Close Menu</button>
+      <button id="matchHelp" class="secondary" type="button">Help & Controls</button>
+      <button id="hostPause" class="secondary hidden" type="button">Pause Match</button>
+      <button id="menuLeave" class="secondary" type="button">Leave Match</button>
+      <button id="menuClose" class="ghost" type="button">Close</button>
     </div>
 
     <!-- Toast Notification -->
